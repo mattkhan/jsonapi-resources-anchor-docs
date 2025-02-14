@@ -45,9 +45,9 @@ Legend
 ```rb
 module Anchor::Types
   # @!attribute [r] resource
-  #   @return [JSONAPI::Resource, NilClass] the associated resource
+  #   @return [JSONAPI::Resource, Anchor::Types::Reference, NilClass] the associated resource
   # @!attribute [r] resources
-  #   @return [Array<JSONAPI::Resource>, NilClass] union of associated resources
+  #   @return [Array<JSONAPI::Resource>, Array<Anchor::Types::Reference>, NilClass] union of associated resources
   # @!attribute [r] null
   #   @return [Boolean] whether the relationship can be `null`
   # @!attribute [r] null_elements

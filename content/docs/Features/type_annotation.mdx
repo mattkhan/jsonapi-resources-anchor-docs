@@ -1,0 +1,162 @@
+---
+title: Type Annotation
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Prerequisites
+
+Including the [`Anchor::SchemaSerializable`](../API/schema_serializable) concern adds an optional second argument to `JSONAPI::Resource.attribute` and `JSONAPI::Resource.relationship` to enable annotations.
+
+The type signatures of `.attribute` and `.relationship` are unchanged otherwise, i.e.
+
+- if the annotation is included, the options hash becomes the third argument
+- if the annotation is not included, the signatures remain the same
+
+## Attributes
+
+In cases where the type of an attribute is [not inferable](./type_inference/#Attributes) (or incorrectly inferred) you may need to annotate the type.
+
+### Example
+
+```ruby
+class UserResource
+  attribute :name, Anchor::Types::String
+
+  def name
+    'static name, actually'
+  end
+end
+```
+
+`name` is not inferable because a method was defined on the resource.
+
+See [`Anchor::Types`](../API/types) for all type annotation options.
+
+### Exhaustive Example
+
+```ruby title="app/resources/exhaustive_resource.rb" tab="ExhaustiveResource"
+class ExhaustiveResource < JSONAPI::Resource
+  include Anchor::SchemaSerializable
+
+  class AssertedObject < Types::Object
+    property :a, Types::Literal.new("a")
+    property "b-dash", Types::Literal.new(1)
+    property :c, Types::Maybe.new(Types::String)
+    property :d_optional, Types::Maybe.new(Types::String), optional: true
+  end
+
+  attribute :asserted_string, Types::String, description: "My asserted string."
+  attribute :asserted_number, Types::Integer
+  attribute :asserted_boolean, Types::Boolean
+  attribute :asserted_null, Types::Null
+  attribute :asserted_unknown, Types::Unknown
+  attribute :asserted_object, AssertedObject
+  attribute :asserted_maybe_object, Types::Maybe.new(AssertedObject)
+  attribute :asserted_array_record, Types::Array.new(Types::Record.new(Types::Integer))
+  attribute :asserted_union, Types::Union.new([Types::String, Types::Float])
+  attribute :with_description, Types::String, description: "This is a provided description."
+  attribute :inferred_unknown
+
+  class LinkSchema < Anchor::Types::Object
+    property :self, Anchor::Types::String
+    property :some_url, Anchor::Types::String
+  end
+  anchor_links_schema LinkSchema
+
+  class MetaSchema < Anchor::Types::Object
+    property :some_count, Anchor::Types::Integer
+    property :extra_stuff, Anchor::Types::String
+  end
+  anchor_meta_schema MetaSchema
+
+  def asserted_string = "asserted_string"
+
+  def asserted_number = 1
+
+  def asserted_boolean = true
+
+  def asserted_null = nil
+
+  def asserted_unknown = nil
+
+  def asserted_object = { a: "a", "b-dash" => 1, c: nil }
+
+  def asserted_maybe_object = nil
+
+  def asserted_array_record = [{ key: 1 }]
+
+  def asserted_union = 2
+
+  def inferred_unknown = nil
+
+  def resource_overridden = "resource_overridden"
+
+  def with_description = "with_description"
+end
+```
+
+```ts title="schema.ts" tab="TypeScript Schema"
+type Maybe<T> = T | null;
+
+export type Exhaustive = {
+  id: number;
+  type: "exhaustives";
+  /** My asserted string. */
+  assertedString: string;
+  assertedNumber: number;
+  assertedBoolean: boolean;
+  assertedNull: null;
+  assertedUnknown: unknown;
+  assertedObject: {
+    a: "a";
+    "b-dash": 1;
+    c: Maybe<string>;
+    d_optional?: Maybe<string>;
+  };
+  assertedMaybeObject: Maybe<{
+    a: "a";
+    "b-dash": 1;
+    c: Maybe<string>;
+    d_optional?: Maybe<string>;
+  }>;
+  assertedArrayRecord: Array<Record<string, number>>;
+  assertedUnion: string | number;
+  /** This is a provided description. */
+  withDescription: string;
+  inferredUnknown: unknown;
+  meta: {
+    some_count: number;
+    extra_stuff: string;
+  };
+  links: {
+    self: string;
+    some_url: string;
+  };
+};
+```
+
+## Relationships
+
+Relationships should generally be inferred correctly, but there still may be cases where you want to override the inferred type.
+
+### Example
+
+A `belongs_to` association is optional but functionally non-null via other methods in your application.
+
+```ruby
+# definitely a contrived example
+class Comment < ApplicationRecord
+  belongs_to :user, optional: true
+  validates :user_id, presence: true
+end
+
+class CommentResource
+  relationship :user, Anchor::Types::Relationship.new(resource: UserResource, null: false)
+end
+```
+
+See [`Anchor::Types::Relationship`](../API/types#anchortypesrelationship) for all options.

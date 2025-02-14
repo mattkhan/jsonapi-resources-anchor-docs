@@ -1,0 +1,130 @@
+---
+title: SchemaSerializable
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Anchor::SchemaSerializable
+
+Include this concern in your `JSONAPI::Resource` classes to enable [type annotations](../Features/type_annotation) and serialization via an Anchor schema generator.
+
+```ruby
+class ApplicationResource < JSONAPI::Resource
+  abstract
+  include Anchor::SchemaSerializable
+end
+```
+
+### `.anchor_meta_schema`
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  class MetaSchema < Anchor::Types::Object
+    property :comments_count, Anchor::Types::Integer
+    property :posts_count, Anchor::Types::Integer
+  end
+  anchor_meta_schema MetaSchema
+end
+```
+
+### `.anchor_links_schema`
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  class LinkSchema < Anchor::Types::Object
+    property :self, Anchor::Types::String
+    property :some_url, Anchor::Types::String
+  end
+  anchor_links_schema LinkSchema
+end
+```
+
+### `.attribute`
+
+<Callout>Note: This overrides `JSONAPI::Resource.attribute`.</Callout>
+
+Adds an optional second argument to annotate it with a type from [`Anchor::Types`](../API/types).
+
+Options hash becomes third argument if annotation included. Original `JSONAPI::Resource` signature remains the same otherwise.
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  attribute :name
+  attribute :computed_string, Anchor::Types::String
+end
+```
+
+### `.relationship`
+
+<Callout>Note: This overrides `JSONAPI::Resource.relationship`.</Callout>
+
+Adds an optional second argument to annotate it with an
+[`Anchor::Types::Relationship`](../API/types#anchortypesrelationship).
+
+Options hash becomes third argument if annotation included. Original `JSONAPI::Resource` signature remains the same otherwise.
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  relationship :posts, to: :many
+  relationship :comments, Anchor::Types::Relationship.new(resource: CommentResource), to: :many
+end
+```
+
+### `.anchor_fetchable_fields`
+
+- Type: `Any -> Array<Symbol>`
+
+Determines the fields to be serialized for a resource. By default, `JSONAPI::Resource.fields` is used.
+
+Useful when you want to generate a context specific schema.
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  attribute :name
+  attribute :address
+
+  def self.anchor_fetchable_fields(context)
+    if context[:role] == :admin
+      fields
+    else
+      [:name]
+    end
+  end
+end
+
+Anchor::TypeScript::SchemaGenerator.call(context: { role: :admin })
+```
+
+### `.anchor_schema_name`
+
+- Type: `String | (String -> String)`
+
+The identifier used when referencing the resource during serialization.
+
+#### Example
+
+```ruby
+class UserResource < ApplicationResource
+  anchor_schema_name "CustomUser"
+end
+
+UserResource.anchor_schema_name # => "CustomUser"
+```
+
+By default, the demodulized name of the class minus "Resource" is used as the schema name for the resource, e.g. `SomeModule::UserResource => User`.
+
+#### Relevant Configs
+
+- [`use_type_as_schema_name`](../API/configuration#use_type_as_schema_name)
+  - When `true`, the `String#classify`'d `type` that `JSONAPI::Resource` determines from the resource will be used.

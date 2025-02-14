@@ -5,6 +5,24 @@ title: Schema
 
 ## Anchor::Schema
 
+### Example
+
+```ruby
+class MySchema < Anchor::Schema
+  resource UserResource
+  resource PostResource
+
+  enum UserRoleEnum
+end
+
+MySchema.register
+```
+
+<Callout>
+  Note: Currently, dependent resources and enums do not have their types
+  generated. _All_ resources and enums must be registered as part of the schema.
+</Callout>
+
 ## Class Methods
 
 ### `.register`
@@ -16,6 +34,7 @@ title: Schema
 - Type: `Anchor::Resource -> void`
 
 <Callout>
+
 `Anchor::Resource` is not defined in Anchor. The definition is:
 
 ```ruby

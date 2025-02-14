@@ -1,0 +1,131 @@
+---
+title: MultifileSchemaGenerator
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## Anchor::TypeScript::MultifileSchemaGenerator
+
+Generate a file for each resource type definition.
+
+`Maybe` and enums are defined in `shared.ts`.
+
+### Example
+
+```ruby
+class Schema < Anchor::Schema
+  resource CommentResource
+  resource PostResource
+  resource UserResource
+
+  enum UserRole
+end
+
+results = Anchor::TypeScript::MultifileSchemaGenerator.call(
+  register: Schema.register,
+  context: {},
+  include_all_fields: true,
+  exclude_fields: nil,
+  manually_editable: true,
+)
+
+results.each do |result|
+  puts result.name # String, name of the file
+  result.type # String, either "resource" for resource files or "util" for shared.ts
+  result.text # String, serialized TypeScript
+end
+
+# shared.ts
+# User.ts
+# Post.ts
+```
+
+## `.call` Parameters
+
+`register`, `context`, `include_all_fields`, and `exclude_fields` all have the same behavior as the parameters defined in [`Anchor::TypeScript::SchemaGenerator`](./schema_generator).
+
+### manually_editable
+
+- Type: `Boolean`
+- Default: `true`
+
+If `true`, the generated type and imports are wrapped by `// START AUTOGEN` and `// END AUTOGEN`.
+
+This is useful if you want to make manual edits to a resource's type and ensure it flows to all the other resources that reference it.
+
+#### Example Output
+
+```ts title="User.ts" tab="True"
+// START AUTOGEN
+
+import type { UserRole } from "./shared";
+import type { Comment } from "./Comment";
+import type { Post } from "./Post";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  role: UserRole;
+  relationships: {
+    comments: Array<Comment>;
+    posts: Array<Post>;
+  };
+};
+
+// END AUTOGEN
+
+type User = Model;
+
+export { type User };
+```
+
+```ts title="User.ts" tab="False"
+import type { UserRole } from "./shared";
+import type { Comment } from "./Comment";
+import type { Post } from "./Post";
+
+type User = {
+  id: number;
+  type: "users";
+  name: string;
+  role: UserRole;
+  relationships: {
+    comments: Array<Comment>;
+    posts: Array<Post>;
+  };
+};
+
+export { type User };
+```
+
+```ts title="True vs False.diff" tab="Diff"
+// [!code --]
+// START AUTOGEN
+// [!code --]
+
+import type { UserRole } from "./shared";
+import type { Comment } from "./Comment";
+import type { Post } from "./Post";
+
+type Model = { // [!code --]
+type User = { // [!code ++]
+  id: number;
+  type: "users";
+  name: string;
+  role: UserRole;
+  relationships: {
+    comments: Array<Comment>;
+    posts: Array<Post>;
+  };
+};
+// [!code --]
+
+// [!code --]
+// END AUTOGEN
+// [!code --]
+type User = Model;
+
+export { type User };
+```

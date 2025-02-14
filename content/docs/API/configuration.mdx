@@ -10,7 +10,7 @@ title: Configuration
 | [`field_case`](#field_case)                                                             | `:camel \| :snake \| :kebab \| :camel_without_inflection` | `nil`   |
 | [`ar_column_to_type`](#ar_column_to_type)                                               | `Proc`                                                    | `nil`   |
 | [`use_active_record_comment`](#use_active_record_comment)                               | `Boolean`                                                 | `nil`   |
-| [`use_active_record_presence`](#use_active_record_presence)                             | `Boolean`                                                 | `true`  |
+| [`use_active_record_validations`](#use_active_record_validations)                             | `Boolean`                                                 | `true`  |
 | [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`   |
 | [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`   |
 | [`use_type_as_schema_name`](#use_type_as_schema_name)                                   | `Boolean`                                                 | `nil`   |
@@ -22,7 +22,7 @@ module Anchor
   configure do |c|
     c.field_case = :camel_without_inflection
     c.use_active_record_comment = true
-    c.use_active_record_presence = true
+    c.use_active_record_validations = true
     c.infer_nullable_relationships_as_optional = true
 
     c.ar_column_to_type = lambda { |column|
@@ -94,14 +94,14 @@ export type User = {
 
 Whether to use ActiveRecord comments as the default value of the `description` option. In TypeScript, this would become a comment.
 
-### use_active_record_presence
+### use_active_record_validations
 
 - Type: `Boolean`
 - Default: `true`
 
 Use `ActiveModel` validations on the `ActiveRecord` model to determine whether an attribute is nullable.
 
-For example, `validates :role, presence: true` will infer `role` as non-null regardless of whether the database has a non-null constraint on the `role` column.
+For example, `validates :role, presence: true` will infer `role` as non-null irrespective of the presence of the database's non-null constraint on the `role` column.
 
 ### infer_nullable_relationships_as_optional
 

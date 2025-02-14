@@ -1,0 +1,4 @@
+{
+  "defaultOpen": true,
+  "pages": ["configuration", "types", "schema", "schema_serializable"]
+}

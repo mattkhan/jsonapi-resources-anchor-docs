@@ -7,11 +7,13 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
-## Background
-
-more stuff
-
 ## Attributes
+
+An attribute's type is inferable if:
+
+- the underlying ActiveRecord model of the resource has a type definition for the attribute
+- the method for the attribute is not overridden in the model
+- the method for the attribute is not overridden in the resource
 
 ### Example
 
@@ -19,11 +21,21 @@ more stuff
 class UserResource < ApplicationResource
   attribute :name # => Anchor::Types::String
   attribute :bio # => Anchor::Types::Maybe.new(Anchor::Types::String)
-  attribute :role # => Anchor::Types::String if Anchor.config.use_active_record_presence is true (true is default)
+  attribute :role # => Anchor::Types::String if Anchor.config.use_active_record_validations is true (true is default)
+  attribute :model_override # => Anchor::Types::Unknown
+  attribute :resource_override # => Anchor::Types::Unknown
+
+  def resource_override
+    nil
+  end
 end
 
 class User < ApplicationRecord
   validates :role, presence: true
+
+  def model_override
+    nil
+  end
 end
 
 # db/schema.rb snippet
@@ -31,6 +43,8 @@ create_table "users", force: :cascade do |t|
   t.string "name", null: false
   t.string "bio"
   t.string "role"
+  t.string "model_override"
+  t.string "resource_override"
 end
 ```
 
@@ -41,12 +55,11 @@ underlying ActiveRecord model.
 then mapped to an `Anchor::Type` in
 `Anchor::Types::Inference::ActiveRecord::SQL.from`.
 
-- `Anchor.config.ar_column_to_type` allows custom mappings, see
-  [spec/example/config/initializers/anchor.rb](./spec/example/config/initializers/anchor.rb)
-- `Anchor.config.use_active_record_presence` can be set to `true` to infer
-  nullable attributes (i.e. fields that do not specify `null: false` in
-  schema.rb) as non-null when an unconditional
-  `validates :attribute_name, presence: true` is present on the model
+### Relevant Configs
+
+- [`use_active_record_validations`](../API/configuration/#use_active_record_validations)
+  - use ActiveModel validations on the ActiveRecord model to determine nullability
+- [`ar_column_to_type`](../API/configuration/#ar_column_to_type) - custom type mapping
 
 ## Relationships
 
@@ -74,24 +87,18 @@ end
 
 ```
 
-`JSONAPI::Resource` relationships refer to other `JSONAPI::Resource` classes, so
-the `JSONAPI::Resource.anchor_schema_name` of the related relationship is used
-as a reference in the TypeScript and JSON Schema adapters.
+The [`.anchor_schema_name`](../API/schema_serializable#anchor_schema_name) of the related resource is used as the type identifier in the TypeScript serializer.
+The nullability and cardinality are determined by the underlying ActiveRecord model's reflections, `ActiveRecord::Base.reflections[name]`.
 
-`Anchor` infers whether the associated resource is nullable or an array via
-`JSONAPI::Resource._model_class.reflections[name]` where `name` is the first
-element of the `JSONAPI::Resource._relationships` `[name, relationship]` tuples.
+| ActiveRecord Association               | Inferred `Anchor::Type` (TypeScript expression) |
+| -------------------------------------- | ----------------------------------------------- |
+| `belongs_to :relation`                 | `Relation`                                      |
+| `belongs_to :relation, optional: true` | `Maybe<Relation>`                               |
+| `has_one :relation`                    | `Maybe<Relation>`                               |
+| `has_many :relations`                  | `Array<Relation>`                               |
+| `has_and_belogs_to_many :relations`    | `Array<Relation>`                               |
 
-| ActiveRecord Association               | Inferred `Anchor::Type` |
-| -------------------------------------- | ----------------------- |
-| `belongs_to :relation`                 | `Relation`              |
-| `belongs_to :relation, optional: true` | `Maybe<Relation>`       |
-| `has_one :relation`                    | `Maybe<Relation>`       |
-| `has_many :relations`                  | `Array<Relation>`       |
-| `has_and_belogs_to_many :relations`    | `Array<Relation>`       |
+### Relevant Configs
 
-- set `Anchor.config.infer_nullable_relationships_as_optional` to `true` to
-  infer that the property associated with a nullable relationship will not be
-  present if it's null
-  - e.g. in TypeScript, setting the config to true will infer
-    `{ relation?: Relation }` over `{ relation: Maybe<Relation> }`
+- [`infer_nullable_relationships_as_optional`](../API/configuration/#infer_nullable_relationships_as_optional)
+  - whether to use e.g. `{ relation?: Relation }` or `{ relation: Maybe<Relation> }`

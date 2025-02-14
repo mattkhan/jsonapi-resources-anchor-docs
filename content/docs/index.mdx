@@ -1,5 +1,6 @@
 ---
 title: Quick Start
+full: true
 # description: Getting started with jsonapi-resources-anchor
 ---
 
@@ -7,15 +8,22 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
+## Background
+
+[`jsonapi-resources-anchor`](https://github.com/mattkhan/jsonapi-resources-anchor) enables a minimally invasive way to generate a type schema for your [`jsonapi-resources`](https://github.com/cerebris/jsonapi-resources) API.
+
+- [TypeScript Schema Generator](./docs/API/TypeScript/schema_generator)
+- [Type Inference](./docs/Features/type_inference) via the underlying ActiveRecord model of the resource
+- [Type Annotation](./docs/Features/type_annotation)
+
 ## Installation
 
-Install via Bundler and git: https://bundler.io/guides/git.html
-
 ```ruby title="Gemfile"
-gem 'jsonapi-resources-anchor', '~> 1.0',
-  git: 'https://github.com/mattkhan/jsonapi-resources-anchor',
-  branch: 'main',
-  ref: '...'
+gem 'jsonapi-resources-anchor'
+```
+
+```sh
+bundle install
 ```
 
 ## Generate a schema
@@ -37,6 +45,13 @@ end
 </Callout>
 
 Resources
+
+```ruby title="app/resources/application_resource.rb"
+class ApplicationResource < JSONAPI::Resource
+  abstract
+  include Anchor::SchemaSerializable
+end
+```
 
 ```ruby title="app/resources/exhaustive_resource.rb" tab="ExhaustiveResource"
 class ExhaustiveResource < ApplicationResource
@@ -122,13 +137,6 @@ class ExhaustiveResource < ApplicationResource
 end
 ```
 
-```ruby tab="ApplicationResource"
-class ApplicationResource < JSONAPI::Resource
-  abstract
-  include Anchor::SchemaSerializable
-end
-```
-
 ```ruby tab="Other Resources"
 # app/resources/comment_resource.rb
 class CommentResource < ApplicationResource
@@ -183,7 +191,7 @@ module Anchor
   configure do |c|
     c.field_case = :camel_without_inflection
     c.use_active_record_comment = true
-    c.use_active_record_presence = true
+    c.use_active_record_validations = true
     c.infer_nullable_relationships_as_optional = true
 
     c.ar_column_to_type = lambda { |column|

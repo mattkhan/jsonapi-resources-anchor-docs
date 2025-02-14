@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "---Guides---",
+    "index",
+    "---Features---",
+    "...Features",
+    "---API---",
+    "...API",
+    "---TypeScript---",
+    "...API/TypeScript"
+  ]
+}
