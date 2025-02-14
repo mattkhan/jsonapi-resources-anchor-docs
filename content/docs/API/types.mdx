@@ -1,0 +1,102 @@
+---
+title: Types
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+<Callout>
+  Note: The TypeScript type expression is derived from
+  `Anchor::TypeScript::Serializer` for TypeScript schema generation.
+</Callout>
+
+<Callout>
+Legend
+
+- `T` can be any of the types defined in the table + `Anchor::Types::Relationship` (e.g. `Anchor::Types::String`)
+  - in the type expression column it's the serialized version (e.g. `string`)
+- `Ts`: `T[]`
+- `props`: `Array<Anchor::Types::Property>`
+
+</Callout>
+
+| `Anchor::Types`       | TypeScript type expression                                                |
+| --------------------- | ------------------------------------------------------------------------- |
+| `String`              | `string`                                                                  |
+| `Integer`             | `number`                                                                  |
+| `Float`               | `number`                                                                  |
+| `BigDecimal`          | `string`                                                                  |
+| `Boolean`             | `boolean`                                                                 |
+| `Null`                | `null`                                                                    |
+| `Unknown`             | `unknown`                                                                 |
+| `Maybe.new(T)`        | `Maybe<T>`                                                                |
+| `Array.new(T)`        | `Array<T>`                                                                |
+| `Record`              | `Record<string, unknown>`                                                 |
+| `Record.new(T)`       | `Record<string, T>`                                                       |
+| `Reference.new(name)` | `name` (directly used as type identifier)                                 |
+| `Literal.new(value)`  | `"#{value}"` if `string`, else `value.to_s`                               |
+| `Enum`                | `Enum.anchor_schema_name` (directly used as type identifier)              |
+| `Union.new(Ts)`       | `Ts[0] \| Ts[1] \| ...`                                                   |
+| `Object.new(props)`   | `{ [props[0].name]: props[0].type, [props[1].name]: props[1].type, ... }` |
+
+### Anchor::Types::Relationship
+
+```rb
+module Anchor::Types
+  # @!attribute [r] resource
+  #   @return [JSONAPI::Resource, NilClass] the associated resource
+  # @!attribute [r] resources
+  #   @return [Array<JSONAPI::Resource>, NilClass] union of associated resources
+  # @!attribute [r] null
+  #   @return [Boolean] whether the relationship can be `null`
+  # @!attribute [r] null_elements
+  #   @return [Boolean] whether the elements in a _many_ relationship can be `null`
+  Relationship = Struct.new(:resource, :resources, :null, :null_elements, keyword_init: true)
+end
+```
+
+### Anchor::Types::Object
+
+```rb
+class CustomPayload < Anchor::Types::Object
+  property :id, Anchor::Types::String, optional: true, description: "ID of payload."
+end
+```
+
+### Anchor::Types::Enum
+
+```ruby
+class UserRoleEnum < Anchor::Types::Enum
+  anchor_schema_name "UserRole" # optional. default is demodulized name minus Enum
+
+  # First argument is the enum member identifier that gets camelized in TypeScript serializer
+  # Second argument is the value
+  value :admin, "admin"
+  value :content_creator, "content_creator"
+  value :external, "external"
+  value :guest, "guest"
+  value :system, "system"
+end
+```
+
+Alternatively, you can define it dynamically
+
+```ruby
+class User < ApplicationRecord
+  enum :role, {
+    admin: "admin",
+    conent_creator: "content_creator",
+    external: "external",
+    guest: "guest",
+    system: "system",
+  }
+end
+
+class UserRoleEnum < Anchor::Types::Enum
+  User.roles.each { |key, val| value key, val }
+end
+```
+
+Very similar to
+[rmosolgo/graphql-ruby](https://github.com/rmosolgo/graphql-ruby) enums.

@@ -1,0 +1,438 @@
+---
+title: Quick Start
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Installation
+
+Install via Bundler and git: https://bundler.io/guides/git.html
+
+```ruby title="Gemfile"
+gem 'jsonapi-resources-anchor', '~> 1.0',
+  git: 'https://github.com/mattkhan/jsonapi-resources-anchor',
+  branch: 'main',
+  ref: '...'
+```
+
+## Generate a schema
+
+<Steps>
+
+<Step>
+
+<Callout>
+  Note that the usage of `Types::String` without the `Anchor::` prefix is
+  enabled via
+
+```ruby
+module Types
+  include Anchor::Types
+end
+```
+
+</Callout>
+
+Resources
+
+```ruby title="app/resources/exhaustive_resource.rb" tab="ExhaustiveResource"
+class ExhaustiveResource < ApplicationResource
+  class AssertedObject < Types::Object
+    property :a, Types::Literal.new("a")
+    property "b-dash", Types::Literal.new(1)
+    property :c, Types::Maybe.new(Types::String)
+    property :d_optional, Types::Maybe.new(Types::String), optional: true
+  end
+
+  attribute :asserted_string, Types::String, description: "My asserted string."
+  attribute :asserted_number, Types::Integer
+  attribute :asserted_boolean, Types::Boolean
+  attribute :asserted_null, Types::Null
+  attribute :asserted_unknown, Types::Unknown
+  attribute :asserted_object, AssertedObject
+  attribute :asserted_maybe_object, Types::Maybe.new(AssertedObject)
+  attribute :asserted_array_record, Types::Array.new(Types::Record.new(Types::Integer))
+  attribute :asserted_union, Types::Union.new([Types::String, Types::Float])
+  attribute :with_description, Types::String, description: "This is a provided description."
+  attribute :inferred_unknown
+
+  attribute :uuid
+  attribute :string
+  attribute :maybe_string
+  attribute :text
+  attribute :integer
+  attribute :float
+  attribute :decimal
+  attribute :datetime
+  attribute :timestamp
+  attribute :time
+  attribute :date
+  attribute :boolean
+  attribute :array_string
+  attribute :maybe_array_string
+  attribute :json
+  attribute :jsonb
+  attribute :daterange
+  attribute :enum
+  attribute :virtual_upcased_string
+  attribute :loljk
+  attribute :delegated_maybe_string, delegate: :maybe_string
+  attribute :model_overridden
+  attribute :resource_overridden
+  attribute :with_comment
+
+  class LinkSchema < Anchor::Types::Object
+    property :self, Anchor::Types::String
+    property :some_url, Anchor::Types::String
+  end
+  anchor_links_schema LinkSchema
+
+  class MetaSchema < Anchor::Types::Object
+    property :some_count, Anchor::Types::Integer
+    property :extra_stuff, Anchor::Types::String
+  end
+  anchor_meta_schema MetaSchema
+
+  def asserted_string = "asserted_string"
+
+  def asserted_number = 1
+
+  def asserted_boolean = true
+
+  def asserted_null = nil
+
+  def asserted_unknown = nil
+
+  def asserted_object = { a: "a", "b-dash" => 1, c: nil }
+
+  def asserted_maybe_object = nil
+
+  def asserted_array_record = [{ key: 1 }]
+
+  def asserted_union = 2
+
+  def inferred_unknown = nil
+
+  def resource_overridden = "resource_overridden"
+
+  def with_description = "with_description"
+end
+```
+
+```ruby tab="ApplicationResource"
+class ApplicationResource < JSONAPI::Resource
+  abstract
+  include Anchor::SchemaSerializable
+end
+```
+
+```ruby tab="Other Resources"
+# app/resources/comment_resource.rb
+class CommentResource < ApplicationResource
+  attribute :text
+  attribute :created_at
+  attribute :updated_at
+
+  relationship :user, to: :one, description: "Author of the comment."
+  relationship :deleted_by, to: :one, class_name: "User"
+  relationship :commentable, polymorphic: true, to: :one
+
+  def self.anchor_fetchable_fields(context)
+    case context[:role]
+    when "test" then fields - [:user, :text]
+    else [:created_at]
+    end
+  end
+end
+
+# app/resources/post_resource.rb
+class PostResource < ApplicationResource
+  attribute :description
+
+  relationship :user, to: :one
+  relationship :comments, to: :many
+  relationship :participants, to: :many, class_name: "User"
+end
+
+# app/resources/user_resource.rb
+class UserResource < ApplicationResource
+  attribute :name
+  attribute :role, UserRoleEnum
+
+  relationship :comments, to: :many
+  relationship :posts, to: :many
+end
+
+# app/resources/user_role_enum.rb
+class UserRoleEnum < Types::Enum
+  anchor_schema_name "UserRole"
+
+  value :admin, "admin"
+  value :content_creator, "content_creator"
+  value :external, "external"
+  value :guest, "guest"
+  value :system, "system"
+end
+```
+
+```ruby title="config/initializers/anchor.rb"
+module Anchor
+  configure do |c|
+    c.field_case = :camel_without_inflection
+    c.use_active_record_comment = true
+    c.use_active_record_presence = true
+    c.infer_nullable_relationships_as_optional = true
+
+    c.ar_column_to_type = lambda { |column|
+      return Types::Literal.new("never") if column.name == "loljk"
+      Types::Inference::ActiveRecord::SQL.default_ar_column_to_type(column)
+    }
+
+    c.empty_relationship_type = -> { Anchor::Types::Object }
+  end
+end
+
+JSONAPI.configure do |c|
+  c.json_key_format = :camelized_key
+end
+```
+
+Schemas
+
+```ruby title="app/resources/schema.rb" tab="Anchor Schema"
+class Schema < Anchor::Schema
+  resource CommentResource
+  resource UserResource
+  resource PostResource
+  resource ExhaustiveResource
+
+  enum UserRoleEnum
+end
+```
+
+```ruby title="db/schema.rb" tab="ActiveRecord Schema"
+ActiveRecord::Schema[7.1].define(version: 2024_08_15_211806) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
+
+  # Custom types defined in this database.
+  # Note that some types may not work with other database engines. Be careful if changing database.
+  create_enum "exhaustive_enum", ["sample", "enum", "value"]
+
+  create_table "comments", force: :cascade do |t|
+    t.string "text", null: false
+    t.string "commentable_type"
+    t.bigint "commentable_id"
+    t.bigint "user_id", null: false
+    t.bigint "deleted_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
+    t.index ["deleted_by_id"], name: "index_comments_on_deleted_by_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
+  create_table "exhaustives", force: :cascade do |t|
+    t.string "string", null: false
+    t.string "maybe_string"
+    t.text "text", null: false
+    t.integer "integer", null: false
+    t.float "float", null: false
+    t.decimal "decimal", null: false
+    t.datetime "datetime", null: false
+    t.datetime "timestamp", precision: nil, null: false
+    t.time "time", null: false
+    t.date "date", null: false
+    t.boolean "boolean", null: false
+    t.binary "binary"
+    t.string "array_string", null: false, array: true
+    t.string "maybe_array_string", array: true
+    t.json "json", null: false
+    t.jsonb "jsonb", null: false
+    t.daterange "daterange", null: false
+    t.enum "enum", default: "sample", null: false, enum_type: "exhaustive_enum"
+    t.uuid "uuid", null: false
+    t.virtual "virtual_upcased_string", type: :string, as: "upper((string)::text)", stored: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "loljk"
+    t.string "model_overridden"
+    t.string "resource_overridden"
+    t.string "with_comment", comment: "This is a comment."
+  end
+
+  create_table "posts", force: :cascade do |t|
+    t.string "description", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_posts_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "integer"
+    t.decimal "decimal"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "role"
+  end
+
+  add_foreign_key "comments", "users", column: "deleted_by_id"
+end
+```
+
+```ruby title="lib/tasks/jsonapi.rake"
+namespace :jsonapi do
+  desc "Generate JSONAPI::Resource Anchor schema"
+  task generate: :environment do
+    puts "Generating JSONAPI::Resource Anchor schema..."
+
+    content = Anchor::TypeScript::SchemaGenerator(
+      register: Schema.register,
+      context: {},
+      include_all_fields: true,
+      exclude_fields: nil,
+    ).call
+
+    path = Rails.root.join("schema.ts")
+    File.open(path, "w") { |f| f.write(content) }
+    puts "✅ #{File.basename(path)}"
+  end
+end
+```
+
+</Step>
+
+<Step>
+
+```shell tab="Command"
+rails jsonapi:generate
+```
+
+```txt tab="Output"
+Generating JSONAPI::Resource Anchor schema...
+✅ schema.ts
+
+```
+
+</Step>
+
+<Step>
+
+```ts title="schema.ts"
+type Maybe<T> = T | null;
+
+export enum UserRole {
+  Admin = "admin",
+  ContentCreator = "content_creator",
+  External = "external",
+  Guest = "guest",
+  System = "system",
+}
+
+export type Comment = {
+  id: number;
+  type: "comments";
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  relationships: {
+    /** Author of the comment. */
+    user: User;
+    deletedBy?: User;
+    commentable?: Post;
+  };
+};
+
+export type User = {
+  id: number;
+  type: "users";
+  name: string;
+  role: UserRole;
+  relationships: {
+    comments: Array<Comment>;
+    posts: Array<Post>;
+  };
+};
+
+export type Post = {
+  id: number;
+  type: "posts";
+  description: string;
+  relationships: {
+    user: User;
+    comments: Array<Comment>;
+    participants: Array<User>;
+  };
+};
+
+export type Exhaustive = {
+  id: number;
+  type: "exhaustives";
+  /** My asserted string. */
+  assertedString: string;
+  assertedNumber: number;
+  assertedBoolean: boolean;
+  assertedNull: null;
+  assertedUnknown: unknown;
+  assertedObject: {
+    a: "a";
+    "b-dash": 1;
+    c: Maybe<string>;
+    d_optional?: Maybe<string>;
+  };
+  assertedMaybeObject: Maybe<{
+    a: "a";
+    "b-dash": 1;
+    c: Maybe<string>;
+    d_optional?: Maybe<string>;
+  }>;
+  assertedArrayRecord: Array<Record<string, number>>;
+  assertedUnion: string | number;
+  /** This is a provided description. */
+  withDescription: string;
+  inferredUnknown: unknown;
+  uuid: string;
+  string: string;
+  maybeString: string;
+  text: string;
+  integer: number;
+  float: number;
+  decimal: string;
+  datetime: string;
+  timestamp: string;
+  time: string;
+  date: string;
+  boolean: boolean;
+  arrayString: Array<string>;
+  maybeArrayString: Maybe<Array<string>>;
+  json: Record<string, unknown>;
+  jsonb: Record<string, unknown>;
+  daterange: unknown;
+  enum: unknown;
+  virtualUpcasedString: Maybe<string>;
+  loljk: "never";
+  delegatedMaybeString: string;
+  modelOverridden: unknown;
+  resourceOverridden: unknown;
+  /** This is a comment. */
+  withComment: Maybe<string>;
+  relationships: {};
+  meta: {
+    some_count: number;
+    extra_stuff: string;
+  };
+  links: {
+    self: string;
+    some_url: string;
+  };
+};
+```
+
+</Step>
+
+</Steps>

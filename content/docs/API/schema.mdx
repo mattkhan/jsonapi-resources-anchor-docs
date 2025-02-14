@@ -1,0 +1,50 @@
+---
+title: Schema
+# description: Getting started with jsonapi-resources-anchor
+---
+
+## Anchor::Schema
+
+## Class Methods
+
+### `.register`
+
+- Type: [`Anchor::Schema::Register`](#anchorschemaregister)
+
+### `.resource`
+
+- Type: `Anchor::Resource -> void`
+
+<Callout>
+`Anchor::Resource` is not defined in Anchor. The definition is:
+
+```ruby
+module Anchor::Resource
+  abstract
+  include Anchor::SchemaSerializable
+end
+```
+
+</Callout>
+
+Adds `resource` to `register`.
+
+### `.enum`
+
+- Type: `Achor::Types::Enum -> void`
+
+Adds `enum` to `register`.
+
+## Classes
+
+### Anchor::Schema::Register
+
+#### Instance Methods
+
+`#enums`
+
+- Type: `Anchor::Types::Enum[]`
+
+`#resources`
+
+- Type: `Anchor::Resource[]`

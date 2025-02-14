@@ -1,0 +1,4 @@
+nix develop -c fish -C "
+  alias something=\"bundle exec rspec\"
+  "
+

@@ -1,0 +1,152 @@
+---
+title: Configuration
+# description: Getting started with jsonapi-resources-anchor
+---
+
+## Quick Reference
+
+| Name                                                                                    | Type                                                      | Default |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------- |
+| [`field_case`](#field_case)                                                             | `:camel \| :snake \| :kebab \| :camel_without_inflection` | `nil`   |
+| [`ar_column_to_type`](#ar_column_to_type)                                               | `Proc`                                                    | `nil`   |
+| [`use_active_record_comment`](#use_active_record_comment)                               | `Boolean`                                                 | `nil`   |
+| [`use_active_record_presence`](#use_active_record_presence)                             | `Boolean`                                                 | `true`  |
+| [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`   |
+| [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`   |
+| [`use_type_as_schema_name`](#use_type_as_schema_name)                                   | `Boolean`                                                 | `nil`   |
+
+### Example
+
+```ruby title="config/initializers/anchor.rb"
+module Anchor
+  configure do |c|
+    c.field_case = :camel_without_inflection
+    c.use_active_record_comment = true
+    c.use_active_record_presence = true
+    c.infer_nullable_relationships_as_optional = true
+
+    c.ar_column_to_type = lambda { |column|
+      return Types::Literal.new("never") if column.name == "loljk"
+      Types::Inference::ActiveRecord::SQL.default_ar_column_to_type(column)
+    }
+
+    c.empty_relationship_type = -> { Anchor::Types::Object }
+  end
+end
+```
+
+## Options
+
+### field_case
+
+- Type: `:camel | :snake | :kebab | :camel_without_inflection`
+- Default: `nil`
+
+Determines the format for properties of `attributes` and `relationships`.
+
+- `nil` - no changes to key name
+- camel, snake, and kebab format keys as their names suggest
+- camel_without_inflection - camelize the key without using inflections defined in your Rails app
+  - e.g. given `inflect.acronym "LOL"` and key `"lol_what"`
+    - camel: `"lol_what".camellize` => `"LOLWhat"`
+    - camel_without_inflection: `camel_without_inflection("lol_what")` => `"LolWhat"`
+
+### ar_column_to_type
+
+- Type: `Proc`
+- Default: `nil`
+
+Input: `ActiveRecord::Base.columns_hash[attribute]`
+
+Output: member of `Anchor::Types`
+
+#### Example
+
+```ruby
+module Anchor
+  configure do |c|
+    c.ar_column_to_type = lambda { |column|
+      return Types::Literal.new("never") if column.name == "loljk"
+      Types::Inference::ActiveRecord::SQL.default_ar_column_to_type(column)
+    }
+  end
+end
+
+class UserResource < ApplicationResource
+  attribute :loljk
+end
+```
+
+```ts title="schema.ts"
+// ...
+export type User = {
+  id: string;
+  type: "users";
+  loljk: "never";
+};
+// ...
+```
+
+### use_active_record_comment
+
+- Type: `Boolean`
+- Default: `nil`
+
+Whether to use ActiveRecord comments as the default value of the `description` option. In TypeScript, this would become a comment.
+
+### use_active_record_presence
+
+- Type: `Boolean`
+- Default: `true`
+
+Use `ActiveModel` validations on the `ActiveRecord` model to determine whether an attribute is nullable.
+
+For example, `validates :role, presence: true` will infer `role` as non-null regardless of whether the database has a non-null constraint on the `role` column.
+
+### infer_nullable_relationships_as_optional
+
+- Type: `Boolean`
+- Default: `nil`
+
+`true` infers nullable relationships as optional.
+
+For example, in TypeScript, `true` infers `{ relation?: Relation }` over `{ relation: Maybe<Relation> }`.
+
+### empty_relationship_type
+
+- Type: `Proc`
+- Default: `nil`
+
+By default, if there are no relationships for a resource then the `relationships` property is not included in the TypeScript serializer.
+
+If this config is defined, the `relationships` property will be included with the returned `Anchor` type as the type.
+
+#### Example
+
+```ruby
+Anchor.configure { |c| c.empty_relationship_type = -> { Anchor::Types::Object } }
+
+class UserResource < ApplicationResource
+  attribute :name, Anchor::Types::String
+end
+```
+
+```ts title="schema.ts"
+// ...
+export type User = {
+  id: string;
+  type: "users";
+  name: string;
+  relationships: {};
+};
+// ...
+```
+
+### use_type_as_schema_name
+
+- Type: `Boolean`
+- Default: `nil`
+
+By default, the demodulized name of the class minus "Resource" is used as the schema name for the resource, e.g. `SomeModule::UserResource => User`.
+
+When `true`, the `String#classify`'d `type` that `JSONAPI::Resource` determines from the resource will be used.

@@ -1,0 +1,97 @@
+---
+title: Type Inference
+# description: Getting started with jsonapi-resources-anchor
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Background
+
+more stuff
+
+## Attributes
+
+### Example
+
+```ruby
+class UserResource < ApplicationResource
+  attribute :name # => Anchor::Types::String
+  attribute :bio # => Anchor::Types::Maybe.new(Anchor::Types::String)
+  attribute :role # => Anchor::Types::String if Anchor.config.use_active_record_presence is true (true is default)
+end
+
+class User < ApplicationRecord
+  validates :role, presence: true
+end
+
+# db/schema.rb snippet
+create_table "users", force: :cascade do |t|
+  t.string "name", null: false
+  t.string "bio"
+  t.string "role"
+end
+```
+
+`JSONAPI::Resource` attributes are inferred via introspection of the resource's
+underlying ActiveRecord model.
+
+`ActiveRecord::Base.columns_hash[attribute]` is used to get the SQL type and is
+then mapped to an `Anchor::Type` in
+`Anchor::Types::Inference::ActiveRecord::SQL.from`.
+
+- `Anchor.config.ar_column_to_type` allows custom mappings, see
+  [spec/example/config/initializers/anchor.rb](./spec/example/config/initializers/anchor.rb)
+- `Anchor.config.use_active_record_presence` can be set to `true` to infer
+  nullable attributes (i.e. fields that do not specify `null: false` in
+  schema.rb) as non-null when an unconditional
+  `validates :attribute_name, presence: true` is present on the model
+
+## Relationships
+
+### Example
+
+```ruby
+class User < ApplicationRecord
+  has_many :posts
+  has_one :posts
+end
+
+class UserResource < ApplicationResource
+  relationship :posts, to: :many # => Anchor::Types::Array.new(Anchor::Types::Reference.new("Post"))
+end
+
+class Post < ApplicationRecord
+  belongs_to :user
+  belongs_to :deleted_by, class_name: "User", optional: true
+end
+
+class PostResource < ApplicationResource
+  relationship :user, to: :one # => Anchor::Types::Reference.new("User")
+  relationship :deleted_by, to: :one, class_name: "User" # => Anchor::Types::Maybe.new(Anchor::Types::Reference.new("User"))
+end
+
+```
+
+`JSONAPI::Resource` relationships refer to other `JSONAPI::Resource` classes, so
+the `JSONAPI::Resource.anchor_schema_name` of the related relationship is used
+as a reference in the TypeScript and JSON Schema adapters.
+
+`Anchor` infers whether the associated resource is nullable or an array via
+`JSONAPI::Resource._model_class.reflections[name]` where `name` is the first
+element of the `JSONAPI::Resource._relationships` `[name, relationship]` tuples.
+
+| ActiveRecord Association               | Inferred `Anchor::Type` |
+| -------------------------------------- | ----------------------- |
+| `belongs_to :relation`                 | `Relation`              |
+| `belongs_to :relation, optional: true` | `Maybe<Relation>`       |
+| `has_one :relation`                    | `Maybe<Relation>`       |
+| `has_many :relations`                  | `Array<Relation>`       |
+| `has_and_belogs_to_many :relations`    | `Array<Relation>`       |
+
+- set `Anchor.config.infer_nullable_relationships_as_optional` to `true` to
+  infer that the property associated with a nullable relationship will not be
+  present if it's null
+  - e.g. in TypeScript, setting the config to true will infer
+    `{ relation?: Relation }` over `{ relation: Maybe<Relation> }`
