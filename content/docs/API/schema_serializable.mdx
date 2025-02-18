@@ -103,7 +103,7 @@ class UserResource < ApplicationResource
   end
 end
 
-Anchor::TypeScript::SchemaGenerator.call(context: { role: :admin })
+Anchor::TypeScript::SchemaGenerator.call(register: Schema.register, context: { role: :admin })
 ```
 
 ### `.anchor_schema_name`
