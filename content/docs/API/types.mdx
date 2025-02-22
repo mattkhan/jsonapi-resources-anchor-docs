@@ -64,6 +64,23 @@ class CustomPayload < Anchor::Types::Object
 end
 ```
 
+```ts title="serlialization output"
+{
+  /** ID of payload. */
+  id?: string;
+}
+```
+
+#### `.property(name, type, optional: nil, description: nil)`
+
+- `name`: `String`
+- `type`: member of `Anchor::Types`
+- `optional`: `Boolean`
+  - whether the property is optional, e.g. if `true`, `{ name?: string }`
+    - as opposed to asserting `Anchor::Types::Maybe.new(Anchor::Types::String)` to get `{ name: Maybe<string> }` serialized
+- `description`: `String`
+  - serialized as a comment in TypeScript
+
 ### Anchor::Types::Enum
 
 ```ruby
@@ -96,6 +113,16 @@ end
 class UserRoleEnum < Anchor::Types::Enum
   User.roles.each { |key, val| value key, val }
 end
+```
+
+```ts title="serlialization output"
+export enum UserRole {
+  Admin = "admin",
+  ContentCreator = "content_creator",
+  External = "external",
+  Guest = "guest",
+  System = "system",
+}
 ```
 
 Very similar to
