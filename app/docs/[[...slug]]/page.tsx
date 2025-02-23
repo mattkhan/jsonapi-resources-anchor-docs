@@ -46,5 +46,8 @@ export async function generateMetadata(props: {
   return {
     title: page.data.title,
     description: page.data.description,
+    verification: {
+      google: "3BvarilVwgDMRDG_Qouz9dTsn6k5PqUQ4Iei0wXS93E",
+    },
   };
 }
