@@ -14,6 +14,9 @@ title: Configuration
 | [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`   |
 | [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`   |
 | [`use_type_as_schema_name`](#use_type_as_schema_name)                                   | `Boolean`                                                 | `nil`   |
+| [`infer_default_as_non_null`](#infer_default_as_non_null)                               | `Boolean`                                                 | `nil`   |
+| [`maybe_as_union`](#maybe_as_union)                                                     | `Boolean`                                                 | `nil`   |
+| [`array_bracket_notation`](#array_bracket_notation)                                     | `Boolean`                                                 | `nil`   |
 
 ### Example
 
@@ -150,3 +153,30 @@ export type User = {
 By default, the demodulized name of the class minus "Resource" is used as the schema name for the resource, e.g. `SomeModule::UserResource => User`.
 
 When `true`, the `String#classify`'d `type` that `JSONAPI::Resource` determines from the resource will be used.
+
+### infer_default_as_non_null
+
+- Type: `Boolean`
+- Default: `nil`
+
+By default, columns without non-null validations will be considered nullable.
+
+When `true`, columns with default values will be considered non-null.
+
+### maybe_as_union
+
+- Type: `Boolean`
+- Default: `nil`
+
+By default, in the TypeScript serializer, nullable types will be serialized as e.g. `Maybe<string>`.
+
+When `true`, nullable types will be serialized as e.g. `string | null`.
+
+### array_bracket_notation
+
+- Type: `Boolean`
+- Default: `nil`
+
+By default, in the TypeScript serializer, array types will be serialized as e.g. `Array<User>`.
+
+When `true`, array types will be serialized as e.g. `(User)[]`.

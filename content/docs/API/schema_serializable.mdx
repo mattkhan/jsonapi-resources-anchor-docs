@@ -128,3 +128,23 @@ By default, the demodulized name of the class minus "Resource" is used as the sc
 
 - [`use_type_as_schema_name`](../API/configuration#use_type_as_schema_name)
   - When `true`, the `String#classify`'d `type` that `JSONAPI::Resource` determines from the resource will be used.
+
+### `.anchor_exclude_from_schema`
+
+- Type: `({ reason: String } -> String) | String`
+
+Whether to exclude this resource from the schema. By default, if not defined on the resource, the value is `"Abstract."` if `JSONAPI::Resource._abstract` is `true`, `nil` otherwise.
+
+#### Example
+
+```ruby
+class CommentableResource < ApplicationResource
+  anchor_exclude_from_schema reason: :polymorphic
+end
+
+CommentableResource.anchor_exclude_from_schema # => :polymoprhic
+CommentableResource.anchor_excluded_from_schema? # => true
+  # implementation: anchor_exclude_from_schema.present?
+```
+
+Useful for when you want to generate the schema dynamically.
