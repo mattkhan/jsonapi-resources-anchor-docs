@@ -10,6 +10,7 @@ title: Configuration
 | [`field_case`](#field_case)                                                             | `:camel \| :snake \| :kebab \| :camel_without_inflection` | `nil`   |
 | [`ar_column_to_type`](#ar_column_to_type)                                               | `Proc`                                                    | `nil`   |
 | [`use_active_record_comment`](#use_active_record_comment)                               | `Boolean`                                                 | `nil`   |
+| [`ar_comment_to_string`](#ar_comment_to_string)                                         | `Proc`                                                    | `nil`   |
 | [`use_active_record_validations`](#use_active_record_validations)                       | `Boolean`                                                 | `true`  |
 | [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`   |
 | [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`   |
@@ -17,6 +18,7 @@ title: Configuration
 | [`infer_default_as_non_null`](#infer_default_as_non_null)                               | `Boolean`                                                 | `nil`   |
 | [`maybe_as_union`](#maybe_as_union)                                                     | `Boolean`                                                 | `nil`   |
 | [`array_bracket_notation`](#array_bracket_notation)                                     | `Boolean`                                                 | `nil`   |
+| [`infer_ar_enums`](#infer_ar_enums)                                                     | `Boolean`                                                 | `nil`   |
 
 ### Example
 
@@ -25,6 +27,15 @@ module Anchor
   configure do |c|
     c.field_case = :camel_without_inflection
     c.use_active_record_comment = true
+    c.ar_comment_to_string = lambda { |comment|
+      begin
+        res = JSON.parse(comment)
+        res["description"]
+      rescue JSON::ParserError
+        comment
+      end
+    }
+
     c.use_active_record_validations = true
     c.infer_nullable_relationships_as_optional = true
 
@@ -96,6 +107,74 @@ export type User = {
 - Default: `nil`
 
 Whether to use ActiveRecord comments as the default value of the `description` option. In TypeScript, this would become a comment.
+
+### ar_comment_to_string
+
+- Type: `Proc`
+- Default: `nil`
+
+Input: `String`
+
+Output: `String`
+
+Requires `use_active_record_comment` to be enabled.
+
+Determines how the comment will be serialized in the serializer.
+
+#### Example
+
+After running this migration to add a JSON string formatted comment to get the schema below:
+
+```ruby
+class AddWithParsedCommentToExhaustives < ActiveRecord::Migration[8.0]
+  def change
+    comment = <<~JSON
+      {
+        "description": "This is a parsed JSON comment.",
+        "test": 2
+      }
+    JSON
+    add_column :exhaustives, :with_parsed_comment, :string, comment:
+  end
+end
+
+ActiveRecord::Schema[8.0].define(version: 2025_09_20_024446) do
+  create_table "exhaustives", force: :cascade do |t|
+    t.string "with_comment", comment: "This is a comment."
+    t.string "with_parsed_comment", comment: "{\n  \"description\": \"This is a parsed JSON comment.\",\n  \"test\": 2\n}\n"
+  end
+end
+```
+
+```ruby
+module Anchor
+  configure do |c|
+    c.field_case = :camel_without_inflection
+    c.use_active_record_comment = true
+    c.ar_comment_to_string = lambda { |comment|
+      begin
+        res = JSON.parse(comment)
+        res["description"]
+      rescue JSON::ParserError
+        comment
+      end
+    }
+  end
+end
+```
+
+The config above will serialize the comment for `with_parsed_comment` like:
+
+```ts
+type Exhaustive = {
+  id: number;
+  type: "exhaustives";
+  /** This is a comment. */
+  withComment: Maybe<string>;
+  /** This is a parsed JSON comment. */
+  withParsedComment: Maybe<string>;
+};
+```
 
 ### use_active_record_validations
 
@@ -180,3 +259,12 @@ When `true`, nullable types will be serialized as e.g. `string | null`.
 By default, in the TypeScript serializer, array types will be serialized as e.g. `Array<User>`.
 
 When `true`, array types will be serialized as e.g. `(User)[]`.
+
+### infer_ar_enums
+
+- Type: `Boolean`
+- Default: `nil`
+
+By default, in the TypeScript serializer, enums defined by `ActiveRecord::Base.enum` will be inferred as `unknown`.
+
+When `true`, they will be serialized as a union of literals, e.g. `type User = { role: "admin" | "member" }`
