@@ -1,8 +1,9 @@
-import { docs, meta } from '@/.source';
-import { createMDXSource } from 'fumadocs-mdx';
-import { loader } from 'fumadocs-core/source';
+import { docs } from "@/.source";
+import { loader } from "fumadocs-core/source";
 
+// See https://fumadocs.vercel.app/docs/headless/source-api for more info
 export const source = loader({
-  baseUrl: '/docs',
-  source: createMDXSource(docs, meta),
+  // it assigns a URL to your pages
+  baseUrl: "/docs",
+  source: docs.toFumadocsSource(),
 });

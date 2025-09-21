@@ -2,7 +2,7 @@
   description = "A Nix-flake-based Ruby development environment";
 
   inputs = {
-    nixpkgs.url = "nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
   outputs = { self, nixpkgs }:
@@ -15,7 +15,7 @@
     {
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
-          packages = with pkgs; [ bun ];
+          packages = with pkgs; [ bun nodejs_24 ];
 
           shellHook = ''
             bun --version
