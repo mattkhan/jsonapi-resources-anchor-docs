@@ -23,11 +23,12 @@ figure.shiki {
 }
 
 :root {
-  /*#0c0e13; ayu dark*/
-  /*#1a1b26; tokyo night*/
-  /*#151515; decent bg for tokyo highlights*/
+  /* #0c0e13 ayu dark bg */
+  /* #1a1b26 tokyo night bg */
+  /* #eff1f5 catpuccian-latte bg */
+  /* #151515; decent bg for tokyo highlights */
   /** Required for server rendered code blocks outside of MDX? */
   /** seems like keepBackground doesn't work because these vars aren't set yet. so the element wrapping the pre can't use the correct bg color */
   --shiki-dark-bg: #1a1b26;
-  --shiki-light-bg: #eff1f5;
+  --shiki-light-bg: #ffffff;
 }

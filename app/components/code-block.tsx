@@ -28,7 +28,7 @@ export async function CodeBlock({
       ),
     },
     themes: {
-      light: "catppuccin-latte",
+      light: "github-light",
       dark: "tokyo-night",
     },
     // colorReplacements: { "#1a1b26": "#151515" },
