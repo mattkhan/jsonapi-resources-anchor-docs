@@ -19,6 +19,16 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    // MDX options
+    rehypeCodeOptions: {
+      lazy: true,
+      experimentalJSEngine: true,
+      langs: ["ts", "js", "sh", "rb", "tsx", "mdx"],
+      inline: "tailing-curly-colon",
+      themes: {
+        light: "catppuccin-latte",
+        dark: "tokyo-night",
+      },
+      // colorReplacements: { "#1a1b26": "#151515" },
+    },
   },
 });

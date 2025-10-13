@@ -3,3 +3,31 @@
 @import "fumadocs-ui/css/preset.css";
 
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/** safari always shows a scroll bar. this hides it. */
+#left-code-block .fd-scroll-container::-webkit-scrollbar {
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/** Required for MDX code blocks/tabs */
+.dark {
+  figure.shiki {
+    background: var(--shiki-dark-bg);
+  }
+}
+
+/** Required for MDX code blocks/tabs */
+figure.shiki {
+  background: var(--shiki-light-bg);
+}
+
+:root {
+  /*#0c0e13; ayu dark*/
+  /*#1a1b26; tokyo night*/
+  /*#151515; decent bg for tokyo highlights*/
+  /** Required for server rendered code blocks outside of MDX? */
+  /** seems like keepBackground doesn't work because these vars aren't set yet. so the element wrapping the pre can't use the correct bg color */
+  --shiki-dark-bg: #1a1b26;
+  --shiki-light-bg: #eff1f5;
+}
