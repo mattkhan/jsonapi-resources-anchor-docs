@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from "react";
-import { loadRubyWasmBinary } from "./utils";
 import { RbValue, RubyVM } from "@ruby/wasm-wasi/dist/vm";
 import { DefaultRubyVM } from "@ruby/wasm-wasi/dist/browser";
 import { prereq } from "./source-code";
 
 const makeRubyModule = async () => {
-  const binary = await loadRubyWasmBinary();
-  const rubyModule = await WebAssembly.compile(binary);
+  const binary = await fetch(
+    "https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.7.2/dist/ruby+stdlib.wasm",
+  );
+  const rubyModule = await WebAssembly.compileStreaming(binary);
   return rubyModule;
 };
 
