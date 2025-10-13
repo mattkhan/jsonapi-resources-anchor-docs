@@ -23,7 +23,7 @@ In cases where the type of an attribute is [not inferable](./type_inference/#Att
 ### Example
 
 ```ruby
-class UserResource
+class UserResource < ApplicationResource
   attribute :name, Anchor::Types::String
 
   def name

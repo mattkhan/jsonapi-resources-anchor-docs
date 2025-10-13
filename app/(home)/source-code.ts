@@ -10,6 +10,7 @@ type Comment = {
   reason: "approval" | "disapproval" | "feedback" | null;
   anonymous: boolean;
   spiciness: 1 | 2 | 3 | 4 | 5;
+  uninferrable: unknown;
   relationships: {
     /** Author of the comment. */
     user: User | null;
