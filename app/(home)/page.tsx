@@ -23,7 +23,7 @@ export default function HomePage() {
       </div>
 
       <div className="mt-10 flex flex-row content-stretch rounded-sm max-md:flex-col bg-[var(--shiki-light-bg)] dark:bg-[var(--shiki-dark-bg)]">
-        <div className="flex flex-col gap-4 max-w-[55%] max-md:max-w-[100%] shrink grow-0">
+        <div className="flex flex-col gap-4 max-w-[50%] max-md:max-w-[100%] shrink grow-0">
           <CodeBlock
             key={1}
             id="left-code-block"
