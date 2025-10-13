@@ -45,9 +45,13 @@ export default function HomePage() {
           />
         </div>
       </div>
-      <div className="my-4">
+      <div className="flex flex-row gap-4 my-4">
         <Card title="Get Started" href="/docs" className="w-fit">
           Quick intro and installation.
+        </Card>
+        <Card title="Playground" href="#playground" className="w-fit">
+          <p>Experimental.</p>
+          <p>Generate TypeScript types from Anchor types.</p>
         </Card>
       </div>
       <div className="prose mt-6 flex-1">

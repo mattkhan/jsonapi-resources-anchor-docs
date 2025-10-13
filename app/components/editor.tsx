@@ -167,7 +167,7 @@ export const Editor = () => {
     return (
       <div className="flex flex-col w-full">
         <div className="prose flex flex-col">
-          <h3>
+          <h3 id="playground">
             Playground{" "}
             <span className="text-sm text-fd-muted-foreground font-normal">
               Experimental
@@ -191,7 +191,7 @@ export const Editor = () => {
           </div>
 
           <div className="text-fd-muted-foreground">
-            Generate TypeScript from the <code>Anchor::Types</code> type.
+            Generate TypeScript from <code>Anchor::Types</code> types.
           </div>
           <div className="text-fd-muted-foreground mb-4">
             Must return a string.
