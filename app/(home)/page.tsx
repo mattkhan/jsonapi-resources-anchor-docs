@@ -11,6 +11,12 @@ import { Card } from "fumadocs-ui/components/card";
 import { Editor } from "../components/editor";
 
 export default function HomePage() {
+  const Title = () => (
+    <>
+      Playground{" "}
+      <span className="text-xs text-fd-muted-foreground font-normal">WIP</span>
+    </>
+  );
   return (
     <main className="container relative max-w-[1100px] px-2 py-4 z-2 lg:py-8">
       <div className="prose w-[100%] relative">
@@ -49,8 +55,7 @@ export default function HomePage() {
         <Card title="Get Started" href="/docs" className="w-fit">
           Quick intro and installation.
         </Card>
-        <Card title="Playground" href="#playground" className="w-fit">
-          <p>Experimental.</p>
+        <Card title={<Title />} href="#playground" className="w-fit">
           <p>Generate TypeScript types from Anchor types.</p>
         </Card>
       </div>

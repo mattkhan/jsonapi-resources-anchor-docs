@@ -170,7 +170,7 @@ export const Editor = () => {
           <h3 id="playground">
             Playground{" "}
             <span className="text-sm text-fd-muted-foreground font-normal">
-              Experimental
+              WIP
             </span>
           </h3>
 
