@@ -2,11 +2,11 @@ export const init = `module T
   include Anchor::Types
 end
 
-class Lol < T::Object
+class Exhaustive < T::Object
   a_maybe = T::Maybe.new(T::String)
   an_array = T::Array.new(T::Integer)
   a_union = T::Union.new([T::String, an_array])
-  some_object = T::Object.new([T::Property.new("nested", T::Boolean, true, "With a comment!")])
+  some_object = T::Object.new([T::Property.new("nested", T::Boolean, true, "Another comment!")])
 
   property :string, T::String
   property :float, T::Float
@@ -17,7 +17,7 @@ class Lol < T::Object
   property :a_maybe, a_maybe
   property :an_array, an_array
   property :a_union, a_union, optional: true,
-    description: "Look at this comment"
+    description: "A comment."
 
   property :string_literal, T::Literal.new("literal")
   property :union_of_literals, T::Union.new([T::Literal.new("lit"), T::Literal.new(1), T::Literal.new(true)])
@@ -27,8 +27,8 @@ class Lol < T::Object
   property :unknown, T::Unknown
 end
 
-expression = Anchor::TypeScript::Serializer.type_string(Lol.camelize)
-"type Lol = #{expression};"`;
+expression = Anchor::TypeScript::Serializer.type_string(Exhaustive.camelize)
+"type Exhaustive = #{expression};"`;
 
 export const prereq = `
 module Anchor
