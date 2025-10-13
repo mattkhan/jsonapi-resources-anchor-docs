@@ -8,6 +8,7 @@ import {
 } from "./source-code";
 import { CodeBlock } from "../components/code-block";
 import { Card } from "fumadocs-ui/components/card";
+import { Editor } from "../components/editor";
 
 export default function HomePage() {
   return (
@@ -154,6 +155,7 @@ export default function HomePage() {
           lang="rb"
         />
       </div>
+      <Editor />
     </main>
   );
 }
