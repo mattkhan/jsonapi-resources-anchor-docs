@@ -38,9 +38,9 @@ MySchema.register
 `Anchor::Resource` is not defined in Anchor. The definition is:
 
 ```ruby
-module Anchor::Resource
-  abstract
+module Anchor::Resource < JSONAPI::Resource
   include Anchor::SchemaSerializable
+  abstract
 end
 ```
 
