@@ -26,7 +26,6 @@ results = Anchor::TypeScript::MultifileSchemaGenerator.call(
   register: Schema.register,
   context: {},
   include_all_fields: true,
-  exclude_fields: nil,
   manually_editable: true,
 )
 
@@ -43,7 +42,7 @@ end
 
 ## `.call` Parameters
 
-`register`, `context`, `include_all_fields`, and `exclude_fields` all have the same behavior as the parameters defined in [`Anchor::TypeScript::SchemaGenerator`](./schema_generator).
+`register`, `context`, and `include_all_fields` all have the same behavior as the parameters defined in [`Anchor::TypeScript::SchemaGenerator`](./schema_generator).
 
 ### manually_editable
 

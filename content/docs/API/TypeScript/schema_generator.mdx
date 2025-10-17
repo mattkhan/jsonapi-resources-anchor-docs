@@ -17,7 +17,6 @@ content = Anchor::TypeScript::SchemaGenerator.call(
   register: Schema.register,
   context: {},
   include_all_fields: true,
-  exclude_fields: nil,
 )
 path = Rails.root.join("schema.ts")
 File.open(path, "w") { |f| f.write(content) }
@@ -50,11 +49,3 @@ See [Quick Start](../..) for a full example.
 - Default: `nil`
 
 Use `JSONAPI::Resource.fields` irrespective of [`Resource.anchor_fetchable_fields`](../schema_serializable#anchor_fetchable_fields).
-
-### exclude_fields
-
-- Type: `Hash{Symbol=> Array<Symbol>}`
-  - Map of `Resource.anchor_schema_name.to_sym` to list of fields, e.g. `{ User: [:name, :posts] }`.
-- Default: `{}`
-
-Per resource list of fields to exclude from serialization.

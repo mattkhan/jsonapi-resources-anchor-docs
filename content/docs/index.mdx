@@ -303,7 +303,6 @@ namespace :jsonapi do
       register: Schema.register,
       context: {},
       include_all_fields: true,
-      exclude_fields: nil,
     ).call
 
     path = Rails.root.join("schema.ts")
