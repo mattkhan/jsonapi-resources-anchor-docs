@@ -106,7 +106,7 @@ export default function HomePage() {
             For relationships, nullability is determined by the model&apos;s{" "}
             <code>ActiveRecord</code> reflections.
           </li>
-          <li>Coming soon: Type inference from RBS signatures.</li>
+          <li>Type inference for attributes from RBS signatures.</li>
         </ul>
 
         <p>From the example above:</p>

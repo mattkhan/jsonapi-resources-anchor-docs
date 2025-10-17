@@ -5,20 +5,22 @@ title: Configuration
 
 ## Quick Reference
 
-| Name                                                                                    | Type                                                      | Default |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------- |
-| [`field_case`](#field_case)                                                             | `:camel \| :snake \| :kebab \| :camel_without_inflection` | `nil`   |
-| [`ar_column_to_type`](#ar_column_to_type)                                               | `Proc`                                                    | `nil`   |
-| [`use_active_record_comment`](#use_active_record_comment)                               | `Boolean`                                                 | `nil`   |
-| [`ar_comment_to_string`](#ar_comment_to_string)                                         | `Proc`                                                    | `nil`   |
-| [`use_active_record_validations`](#use_active_record_validations)                       | `Boolean`                                                 | `true`  |
-| [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`   |
-| [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`   |
-| [`use_type_as_schema_name`](#use_type_as_schema_name)                                   | `Boolean`                                                 | `nil`   |
-| [`infer_default_as_non_null`](#infer_default_as_non_null)                               | `Boolean`                                                 | `nil`   |
-| [`maybe_as_union`](#maybe_as_union)                                                     | `Boolean`                                                 | `nil`   |
-| [`array_bracket_notation`](#array_bracket_notation)                                     | `Boolean`                                                 | `nil`   |
-| [`infer_ar_enums`](#infer_ar_enums)                                                     | `Boolean`                                                 | `nil`   |
+| Name                                                                                    | Type                                                      | Default                  |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------ |
+| [`field_case`](#field_case)                                                             | `:camel \| :snake \| :kebab \| :camel_without_inflection` | `nil`                    |
+| [`ar_column_to_type`](#ar_column_to_type)                                               | `Proc`                                                    | `nil`                    |
+| [`use_active_record_comment`](#use_active_record_comment)                               | `Boolean`                                                 | `nil`                    |
+| [`ar_comment_to_string`](#ar_comment_to_string)                                         | `Proc`                                                    | `nil`                    |
+| [`use_active_record_validations`](#use_active_record_validations)                       | `Boolean`                                                 | `true`                   |
+| [`infer_nullable_relationships_as_optional`](#infer_nullable_relationships_as_optional) | `Boolean`                                                 | `nil`                    |
+| [`empty_relationship_type`](#empty_relationship_type)                                   | `Proc`                                                    | `nil`                    |
+| [`use_type_as_schema_name`](#use_type_as_schema_name)                                   | `Boolean`                                                 | `nil`                    |
+| [`infer_default_as_non_null`](#infer_default_as_non_null)                               | `Boolean`                                                 | `nil`                    |
+| [`maybe_as_union`](#maybe_as_union)                                                     | `Boolean`                                                 | `nil`                    |
+| [`array_bracket_notation`](#array_bracket_notation)                                     | `Boolean`                                                 | `nil`                    |
+| [`infer_ar_enums`](#infer_ar_enums)                                                     | `Boolean`                                                 | `nil`                    |
+| [`rbs`](#rbs)                                                                           | `"off" \| "fallback"`                                     | `"off"`                  |
+| [`rbs_sig_path`](#rbs_sig_path)                                                         | `String`                                                  | `Rails.root.join("sig")` |
 
 ### Example
 
@@ -268,3 +270,29 @@ When `true`, array types will be serialized as e.g. `(User)[]`.
 By default, in the TypeScript serializer, enums defined by `ActiveRecord::Base.enum` will be inferred as `unknown`.
 
 When `true`, they will be serialized as a union of literals, e.g. `type User = { role: "admin" | "member" }`
+
+### rbs
+
+- Type: `"off" | "fallback"`
+- Default: `"off"`
+
+- `"off"` - RBS signatures will not be used.
+- `"fallback"` - Uses RBS signatures as a fallback for uninferrable attributes.
+
+Currently supports getting signatures for attributes. The type of relationships will still be inferred from a combo of the underlying model and resource.
+
+Fallback cases:
+
+| Custom method for field on the Resource? | Field type inferrable on Model? | Type Used                 |
+| ---------------------------------------- | ------------------------------- | ------------------------- |
+| `false`                                  | `false`                         | RBS signature of Model    |
+| `false`                                  | `true`                          | Inferred type for Model   |
+| `true`                                   | `false`                         | RBS signature of Resource |
+| `true`                                   | `true`                          | RBS signature of Resource |
+
+### rbs_sig_path
+
+- Type: `String`
+- Default: `Rails.root.join("sig")`
+
+Path to load RBS signatures from.
