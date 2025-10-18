@@ -2,10 +2,21 @@ import "./global.css";
 import { RootProvider } from "fumadocs-ui/provider";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { Metadata } from "next";
 
 const inter = Inter({
   subsets: ["latin"],
 });
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const metadata: Metadata = {
+  title: "JSONAPI Resources Anchor",
+  description: "Generate TypeScript types from your JSONAPI Resources.",
+  openGraph: {
+    title: "JSONAPI Resources Anchor",
+    description: "Generate TypeScript types from your JSONAPI Resources.",
+  },
+};
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
