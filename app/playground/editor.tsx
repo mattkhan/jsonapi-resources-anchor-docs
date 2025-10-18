@@ -139,7 +139,7 @@ export const Editor = () => {
   }, [initiate, initiateStatus]);
 
   const outputEditor = useOutputEditor(initiateStatus === "success");
-  const [vimEnabled, setVimEnabled] = useState(false);
+  const [vimEnabled, setVimEnabled] = useState(true);
 
   const [evalError, setEvalError] = useState<string>();
 
