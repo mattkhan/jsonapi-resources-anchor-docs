@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RbValue, RubyVM } from "@ruby/wasm-wasi/dist/vm";
 import { DefaultRubyVM } from "@ruby/wasm-wasi/dist/browser";
 import { prereq } from "./source-code";
@@ -23,6 +23,14 @@ export function useRubyVM(params?: Params) {
   const [initiateStatus, setInitiateStatus] =
     useState<InitiateStatus>("pending");
   const status = useRef<Status>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rvm.current) {
+        rvm.current = null;
+      }
+    };
+  }, []);
 
   const initiate = () => {
     setInitiateStatus("loading");

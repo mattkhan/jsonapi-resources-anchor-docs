@@ -5,12 +5,12 @@ import { twMerge } from "tailwind-merge";
 import { CheckIcon, ClipboardIcon } from "lucide-react";
 
 type ButtonProps = React.ComponentProps<"button">;
-const Button = ({ onClick, className, children }: ButtonProps) => {
+export const Button = ({ onClick, className, children }: ButtonProps) => {
   return (
     <button
       className={twMerge(
-        className,
         "block rounded-xl border bg-fd-card p-4 text-fd-card-foreground transition-colors @max-lg:col-span-full hover:bg-fd-accent/80 w-fit",
+        className,
       )}
       onClick={onClick}
     >

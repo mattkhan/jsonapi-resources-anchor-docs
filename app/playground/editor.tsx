@@ -14,33 +14,15 @@ import {
 } from "lz-string";
 
 import { ruby } from "@codemirror/legacy-modes/mode/ruby";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
 import { Card } from "fumadocs-ui/components/card";
 import { useDebounce } from "../components/use-debounce";
 import { init } from "../components/source-code";
 import { useRubyVM } from "../components/use-ruby-vm";
-import { CopyButtonText } from "../components/copy-button";
+import { Button, CopyButtonText } from "../components/copy-button";
+import { CheckCircleIcon, InfoIcon } from "lucide-react";
 
-const Button = ({
-  onClick,
-  children,
-}: React.PropsWithChildren<{ onClick?: () => void }>) => {
-  return (
-    <button
-      className="block rounded-xl border bg-fd-card p-4 text-fd-card-foreground transition-colors @max-lg:col-span-full hover:bg-fd-accent/80 w-fit"
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-};
 const vimpartment = new Compartment();
 
 const useEditor = (props?: {
@@ -50,7 +32,7 @@ const useEditor = (props?: {
   const editor = useRef<EditorView>(null);
   const { onDocChange } = props ?? {};
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (editor.current || !props?.enabled) return;
     Vim.map("jj", "<Esc>", "insert");
 
@@ -104,7 +86,7 @@ const useEditor = (props?: {
 const useOutputEditor = (enabled: boolean) => {
   const editor = useRef<EditorView>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (editor.current || !enabled) return;
     const targetElement = document.querySelector("#editor-output")!;
 
@@ -132,7 +114,9 @@ const useOutputEditor = (enabled: boolean) => {
 };
 
 export const Editor = () => {
-  const { evaluate, initiate, initiateStatus } = useRubyVM();
+  const { evaluate, initiate, initiateStatus } = useRubyVM({ testing: false });
+  const [attempted, setAttempted] = useState(false);
+  const [trusted, setTrusted] = useState(false);
 
   useEffect(() => {
     if (initiateStatus === "pending") initiate();
@@ -150,6 +134,8 @@ export const Editor = () => {
       newParams.set("code", compressToEncodedURIComponent(editorText[0]));
       const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
       window.history.pushState({ path: newUrl }, "", newUrl);
+
+      if (!trusted) return;
 
       const result = evaluate(editorText);
       if (result.status === "error") {
@@ -170,7 +156,7 @@ export const Editor = () => {
       });
       viewer.dispatch(tx);
     },
-    [evaluate, outputEditor],
+    [evaluate, outputEditor, trusted],
   );
 
   const debouncedOnDocChange = useDebounce({ callback: onDocChange });
@@ -325,7 +311,33 @@ export const Editor = () => {
               return newUrl;
             }}
           />
-          <Button onClick={onImperativeChange}>Generate</Button>
+          <div>
+            {!trusted && attempted && (
+              <div className="text-xs absolute mt-[-50px]">
+                Make sure you trust the Ruby code.
+              </div>
+            )}
+            <Button
+              className="whitespace-normal h-fit relative z-10 [&_svg]:h-4 [&_svg]:w-4"
+              onClick={() => {
+                if (!attempted) {
+                  setAttempted(true);
+                  return;
+                }
+                if (!trusted) {
+                  setTrusted(true);
+                  return;
+                }
+
+                onImperativeChange();
+              }}
+            >
+              <div className="flex flex-row gap-2 items-center">
+                {trusted ? <CheckCircleIcon /> : attempted && <InfoIcon />}{" "}
+                Generate
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
 

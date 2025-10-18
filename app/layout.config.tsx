@@ -16,7 +16,7 @@ export const baseOptions: BaseLayoutProps = {
     {
       text: "Documentation",
       url: "/docs",
-      active: "nested-url",
+      active: "none",
     },
     {
       text: "Playground",

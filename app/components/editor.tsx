@@ -10,7 +10,7 @@ import { StreamLanguage } from "@codemirror/language";
 import { javascript } from "@codemirror/lang-javascript";
 
 import { ruby } from "@codemirror/legacy-modes/mode/ruby";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
 import { Card } from "fumadocs-ui/components/card";
 import { useDebounce } from "./use-debounce";
@@ -41,7 +41,7 @@ const useEditor = (props?: {
   const editor = useRef<EditorView>(null);
   const { onDocChange } = props ?? {};
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (editor.current || !props?.enabled) return;
     Vim.map("jj", "<Esc>", "insert");
 
@@ -95,7 +95,7 @@ const useEditor = (props?: {
 const useOutputEditor = (enabled: boolean) => {
   const editor = useRef<EditorView>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (editor.current || !enabled) return;
     const targetElement = document.querySelector("#editor-output")!;
 
