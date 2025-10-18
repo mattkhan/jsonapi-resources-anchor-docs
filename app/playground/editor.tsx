@@ -23,6 +23,15 @@ import { useRubyVM } from "../components/use-ruby-vm";
 import { Button, CopyButtonText } from "../components/copy-button";
 import { CheckCircleIcon, InfoIcon } from "lucide-react";
 
+function setCodeQueryParam(code: string) {
+  const currentUrl = new URL(window.location.href);
+  const newParams = new URLSearchParams(currentUrl.search);
+  newParams.set("code", compressToEncodedURIComponent(code));
+  const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
+  window.history.pushState({ path: newUrl }, "", newUrl);
+  return newUrl;
+}
+
 const vimpartment = new Compartment();
 
 const useEditor = (props?: {
@@ -114,11 +123,37 @@ const useOutputEditor = (enabled: boolean) => {
   return editor;
 };
 
-export const Editor = () => {
+export function Editor() {
+  const [initCode, setInitCode] = useState<{
+    value: string;
+    trusted: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code") || "";
+    const value = decompressFromEncodedURIComponent(code);
+
+    setInitCode({ value: value || init, trusted: !value });
+  }, [setInitCode]);
+
+  if (!initCode) return null;
+
+  return (
+    <InternalEditor initialCode={initCode.value} trusted={initCode.trusted} />
+  );
+}
+
+export const InternalEditor = ({
+  initialCode,
+}: {
+  initialCode: string;
+  trusted: boolean;
+}) => {
   const { evaluate, initiate, initiateStatus } = useRubyVM({ testing: false });
   const [attempted, setAttempted] = useState(false);
   const [trusted, setTrusted] = useState(false);
-  const [initCode, setInitCode] = useState("");
+  const trustedRef = useRef(false);
 
   useEffect(() => {
     if (initiateStatus === "pending") initiate();
@@ -126,18 +161,15 @@ export const Editor = () => {
 
   const outputEditor = useOutputEditor(initiateStatus === "success");
   const [vimEnabled, setVimEnabled] = useState(true);
-
   const [evalError, setEvalError] = useState<string>();
 
   const onDocChange = useCallback(
     (editorText: string) => {
-      const currentUrl = new URL(window.location.href);
-      const newParams = new URLSearchParams(currentUrl.search);
-      newParams.set("code", compressToEncodedURIComponent(editorText[0]));
-      const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
-      window.history.pushState({ path: newUrl }, "", newUrl);
+      setCodeQueryParam(
+        typeof editorText === "string" ? editorText : editorText[0],
+      );
 
-      if (!trusted) return;
+      if (!trustedRef.current) return;
 
       const result = evaluate(editorText);
       if (result.status === "error") {
@@ -158,7 +190,7 @@ export const Editor = () => {
       });
       viewer.dispatch(tx);
     },
-    [evaluate, outputEditor, trusted],
+    [evaluate, outputEditor, trustedRef],
   );
 
   const debouncedOnDocChange = useDebounce({ callback: onDocChange });
@@ -166,53 +198,8 @@ export const Editor = () => {
   const { editor, vim } = useEditor({
     enabled: initiateStatus === "success",
     onDocChange: debouncedOnDocChange,
-    initialCode: initCode,
+    initialCode,
   });
-
-  const something = useCallback(
-    (editorText: string) => {
-      const viewer = editor.current;
-      if (!viewer) return;
-
-      const tx = viewer.state.update({
-        changes: {
-          from: 0,
-          to: viewer.state.doc.length,
-          insert: editorText,
-        },
-      });
-      viewer.dispatch(tx);
-    },
-    [editor],
-  );
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code") || "";
-    const value = decompressFromEncodedURIComponent(code);
-
-    setInitCode(value);
-    something(value);
-  }, [setInitCode, something]);
-
-  useEffect(() => {
-    if (initCode) {
-      const interval = setInterval(() => {
-        const viewer = editor.current;
-        if (!viewer) return;
-
-        const tx = viewer.state.update({
-          changes: {
-            from: 0,
-            to: viewer.state.doc.length,
-            insert: initCode,
-          },
-        });
-        viewer.dispatch(tx);
-        clearInterval(interval);
-      }, 100);
-    }
-  }, [initCode, editor]);
 
   const onImperativeChange = () => {
     const editorText = editor.current?.state.doc.toString() ?? "";
@@ -300,16 +287,8 @@ export const Editor = () => {
           <CopyButtonText
             value="Share"
             onCopy={() => {
-              const currentUrl = new URL(window.location.href);
-              const newParams = new URLSearchParams(currentUrl.search);
-
               const editorText = editor.current?.state.doc.toString() ?? "";
-              newParams.set("code", compressToEncodedURIComponent(editorText));
-
-              const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
-
-              window.history.pushState({ path: newUrl }, "", newUrl);
-              return newUrl;
+              return setCodeQueryParam(editorText);
             }}
           />
           <div>
@@ -326,6 +305,7 @@ export const Editor = () => {
                   return;
                 }
                 if (!trusted) {
+                  trustedRef.current = true;
                   setTrusted(true);
                   onImperativeChange();
                   return;
