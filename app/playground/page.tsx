@@ -1,4 +1,10 @@
 import { Editor } from "./editor";
+import { Metadata } from "next";
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const metadata: Metadata = {
+  title: "Playground",
+};
 
 export default function HomePage() {
   return (

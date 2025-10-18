@@ -28,9 +28,10 @@ const vimpartment = new Compartment();
 const useEditor = (props?: {
   enabled?: boolean;
   onDocChange?: (value: string) => void;
+  initialCode?: string;
 }) => {
   const editor = useRef<EditorView>(null);
-  const { onDocChange } = props ?? {};
+  const { onDocChange, initialCode } = props ?? {};
 
   useEffect(() => {
     if (editor.current || !props?.enabled) return;
@@ -45,7 +46,7 @@ const useEditor = (props?: {
     const targetElement = document.querySelector("#editor")!;
 
     const view = new EditorView({
-      doc: init,
+      doc: initialCode || init,
       extensions: [
         vimpartment.of(vim()),
         myTheme,
@@ -60,13 +61,13 @@ const useEditor = (props?: {
       parent: targetElement,
     });
     editor.current = view;
-    onDocChange?.(init);
+    onDocChange?.(initialCode || init);
 
     return () => {
       editor.current?.dom.remove();
       editor.current = null;
     };
-  }, [onDocChange, props?.enabled]);
+  }, [onDocChange, initialCode, props?.enabled]);
 
   const toggleVim = (enabled: boolean, setEnabled: (val: boolean) => void) => {
     const v = enabled ? vim() : [];
@@ -117,6 +118,7 @@ export const Editor = () => {
   const { evaluate, initiate, initiateStatus } = useRubyVM({ testing: false });
   const [attempted, setAttempted] = useState(false);
   const [trusted, setTrusted] = useState(false);
+  const [initCode, setInitCode] = useState("");
 
   useEffect(() => {
     if (initiateStatus === "pending") initiate();
@@ -164,6 +166,7 @@ export const Editor = () => {
   const { editor, vim } = useEditor({
     enabled: initiateStatus === "success",
     onDocChange: debouncedOnDocChange,
+    initialCode: initCode,
   });
 
   const something = useCallback(
@@ -182,8 +185,6 @@ export const Editor = () => {
     },
     [editor],
   );
-
-  const [initCode, setInitCode] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -326,6 +327,7 @@ export const Editor = () => {
                 }
                 if (!trusted) {
                   setTrusted(true);
+                  onImperativeChange();
                   return;
                 }
 
