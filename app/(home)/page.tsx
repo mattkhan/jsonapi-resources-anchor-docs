@@ -55,7 +55,7 @@ export default function HomePage() {
         <Card title="Get Started" href="/docs" className="w-fit">
           Quick intro and installation.
         </Card>
-        <Card title={<Title />} href="#playground" className="w-fit">
+        <Card title={<Title />} href="/playground" className="w-fit">
           <p>Generate TypeScript types from Anchor types.</p>
         </Card>
       </div>

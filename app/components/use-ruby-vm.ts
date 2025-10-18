@@ -14,7 +14,10 @@ const makeRubyModule = async () => {
 type InitiateStatus = "pending" | "loading" | "success" | "error";
 type Status = "loading" | "success" | "error";
 
-export function useRubyVM() {
+type Params = { testing: boolean };
+export function useRubyVM(params?: Params) {
+  const { testing = false } = params || {};
+
   const rubyModule = useRef<WebAssembly.Module>(null);
   const rvm = useRef<RubyVM>(null);
   const [initiateStatus, setInitiateStatus] =
@@ -23,6 +26,13 @@ export function useRubyVM() {
 
   const initiate = () => {
     setInitiateStatus("loading");
+
+    if (testing) {
+      setTimeout(() => {
+        setInitiateStatus("success");
+      }, 0);
+      return;
+    }
 
     makeRubyModule()
       .then((mod) => {
@@ -54,7 +64,10 @@ export function useRubyVM() {
       code: string,
     ):
       | { status: "error"; error: string | null }
-      | { status: "success"; data: RbValue } => {
+      | { status: "success"; data: Pick<RbValue, "toString"> } => {
+      if (!rvm.current && testing)
+        return { status: "success", data: "look at it go" };
+
       if (!rvm.current) return { status: "error", error: null };
 
       try {
@@ -69,7 +82,7 @@ export function useRubyVM() {
         };
       }
     },
-    [reset],
+    [reset, testing],
   );
 
   return { initiate, initiateStatus, evaluate };

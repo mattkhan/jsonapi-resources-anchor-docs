@@ -8,16 +8,25 @@ import { Compartment, EditorState } from "@codemirror/state";
 import { defaultKeymap } from "@codemirror/commands";
 import { StreamLanguage } from "@codemirror/language";
 import { javascript } from "@codemirror/lang-javascript";
+import {
+  decompressFromEncodedURIComponent,
+  compressToEncodedURIComponent,
+} from "lz-string";
 
 import { ruby } from "@codemirror/legacy-modes/mode/ruby";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { tokyoNight } from "@uiw/codemirror-theme-tokyo-night";
 import { Card } from "fumadocs-ui/components/card";
-import { useDebounce } from "./use-debounce";
-import { init } from "./source-code";
-import { useRubyVM } from "./use-ruby-vm";
-import { CopyButtonText } from "./copy-button";
-import { compressToEncodedURIComponent } from "lz-string";
+import { useDebounce } from "../components/use-debounce";
+import { init } from "../components/source-code";
+import { useRubyVM } from "../components/use-ruby-vm";
+import { CopyButtonText } from "../components/copy-button";
 
 const Button = ({
   onClick,
@@ -124,8 +133,13 @@ const useOutputEditor = (enabled: boolean) => {
 
 export const Editor = () => {
   const { evaluate, initiate, initiateStatus } = useRubyVM();
+
+  useEffect(() => {
+    if (initiateStatus === "pending") initiate();
+  }, [initiate, initiateStatus]);
+
   const outputEditor = useOutputEditor(initiateStatus === "success");
-  const [vimEnabled, setVimEnabled] = useState(true);
+  const [vimEnabled, setVimEnabled] = useState(false);
 
   const [evalError, setEvalError] = useState<string>();
 
@@ -160,6 +174,53 @@ export const Editor = () => {
     onDocChange: debouncedOnDocChange,
   });
 
+  const something = useCallback(
+    (editorText: string) => {
+      const viewer = editor.current;
+      if (!viewer) return;
+
+      const tx = viewer.state.update({
+        changes: {
+          from: 0,
+          to: viewer.state.doc.length,
+          insert: editorText,
+        },
+      });
+      viewer.dispatch(tx);
+    },
+    [editor],
+  );
+
+  const [initCode, setInitCode] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code") || "";
+    const value = decompressFromEncodedURIComponent(code);
+
+    setInitCode(value);
+    something(value);
+  }, [setInitCode, something]);
+
+  useEffect(() => {
+    if (initCode) {
+      const interval = setInterval(() => {
+        const viewer = editor.current;
+        if (!viewer) return;
+
+        const tx = viewer.state.update({
+          changes: {
+            from: 0,
+            to: viewer.state.doc.length,
+            insert: initCode,
+          },
+        });
+        viewer.dispatch(tx);
+        clearInterval(interval);
+      }, 100);
+    }
+  }, [initCode, editor]);
+
   const onImperativeChange = () => {
     const editorText = editor.current?.state.doc.toString() ?? "";
     onDocChange(editorText);
@@ -167,7 +228,7 @@ export const Editor = () => {
 
   const Playground = ({ children }: React.PropsWithChildren) => {
     return (
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full px-2">
         <div className="prose flex flex-col">
           <h3 id="playground">
             Playground{" "}
@@ -248,9 +309,13 @@ export const Editor = () => {
             onCopy={() => {
               const currentUrl = new URL(window.location.href);
               const newParams = new URLSearchParams(currentUrl.search);
+
               const editorText = editor.current?.state.doc.toString() ?? "";
               newParams.set("code", compressToEncodedURIComponent(editorText));
-              const newUrl = `${currentUrl.protocol}//${currentUrl.host}/playground?${newParams.toString()}`;
+
+              const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
+
+              window.history.pushState({ path: newUrl }, "", newUrl);
               return newUrl;
             }}
           />
@@ -286,7 +351,6 @@ export const Editor = () => {
           </div>
         </div>
       </div>
-      <div className="mb-[200px]"></div>
     </div>
   );
 };

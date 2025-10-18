@@ -18,6 +18,11 @@ export const baseOptions: BaseLayoutProps = {
       url: "/docs",
       active: "nested-url",
     },
+    {
+      text: "Playground",
+      url: "/playground",
+      active: "nested-url",
+    },
   ],
   githubUrl: "https://github.com/mattkhan/jsonapi-resources-anchor",
 };
