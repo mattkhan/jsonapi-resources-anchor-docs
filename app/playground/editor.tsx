@@ -145,6 +145,12 @@ export const Editor = () => {
 
   const onDocChange = useCallback(
     (editorText: string) => {
+      const currentUrl = new URL(window.location.href);
+      const newParams = new URLSearchParams(currentUrl.search);
+      newParams.set("code", compressToEncodedURIComponent(editorText[0]));
+      const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
+      window.history.pushState({ path: newUrl }, "", newUrl);
+
       const result = evaluate(editorText);
       if (result.status === "error") {
         setEvalError(result.error ?? undefined);
