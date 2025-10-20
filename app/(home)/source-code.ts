@@ -1,6 +1,6 @@
-export const commentType = `import type { Post } from '/.Post.model.ts';
-import type { Reaction } from '/.Reaction.model.ts';
-import type { User } from '/.User.model.ts';
+export const commentType = `import type { Post } from './Post.model.ts';
+import type { Reaction } from './Reaction.model.ts';
+import type { User } from './User.model.ts';
 
 type Comment = {
   id: number;
@@ -15,7 +15,7 @@ type Comment = {
     /** Author of the comment. */
     user: User | null;
     reactions: Reaction[];
-    commentable: User | Post;
+    commentable: Post | User;
   }
 };
 
