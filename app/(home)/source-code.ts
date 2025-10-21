@@ -1,10 +1,10 @@
-export const commentType = `import type { Post } from './Post.model.ts';
-import type { Reaction } from './Reaction.model.ts';
-import type { User } from './User.model.ts';
+export const commentType = `import type { Post } from "./Post.model.ts";
+import type { Reaction } from "./Reaction.model.ts";
+import type { User } from "./User.model.ts";
 
 type Comment = {
   id: number;
-  type: 'comments';
+  type: "comments";
   text: string;
   /** Reason the author left a comment. */
   reason: "approval" | "disapproval" | "feedback" | null;
