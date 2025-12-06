@@ -11,6 +11,9 @@ export const docs = defineDocs({
   dir: "content/docs",
   docs: {
     schema: frontmatterSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -21,7 +24,7 @@ export default defineConfig({
   mdxOptions: {
     rehypeCodeOptions: {
       lazy: true,
-      experimentalJSEngine: true,
+      // experimentalJSEngine: true,
       langs: ["ts", "js", "sh", "rb", "tsx", "mdx"],
       inline: "tailing-curly-colon",
       themes: {

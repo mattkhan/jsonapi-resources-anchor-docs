@@ -2,8 +2,6 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
-@source '../node_modules/fumadocs-ui/dist/**/*.js';
-
 /** safari always shows a scroll bar. this hides it. */
 #left-code-block .fd-scroll-container::-webkit-scrollbar {
   height: 0 !important;
