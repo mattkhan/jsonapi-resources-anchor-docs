@@ -1,5 +1,5 @@
 "use client";
-import { basicSetup } from "codemirror";
+import { basicSetup } from "./basic-setup";
 import { Vim, vim } from "@replit/codemirror-vim";
 
 import { EditorView, keymap } from "@codemirror/view";
