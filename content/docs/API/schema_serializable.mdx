@@ -147,4 +147,14 @@ CommentableResource.anchor_excluded_from_schema? # => true
   # implementation: anchor_exclude_from_schema.present?
 ```
 
-Useful for when you want to generate the schema dynamically.
+Useful for when you want to generate the schema dynamically, e.g.
+
+```ruby
+class Schema < Anchor::Schema
+  serializable_resources = JSONAPI::Resource.descendants
+    .filter { |klass| klass.singleton_methods.include?(:anchor_schema_name) }
+    .reject(&:anchor_exclude_from_schema?)
+
+  serializable_resources.each { |klass| resource(klass) }
+end
+```
