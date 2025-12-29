@@ -2,6 +2,7 @@
   "pages": [
     "---Guides---",
     "index",
+    "ci-sync-enforcement",
     "---Features---",
     "...Features",
     "---API---",

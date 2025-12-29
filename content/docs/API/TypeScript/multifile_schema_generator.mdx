@@ -53,6 +53,8 @@ If `true`, the generated type and imports are wrapped by `// START AUTOGEN` and 
 
 This is useful if you want to make manual edits to a resource's type and ensure it flows to all the other resources that reference it.
 
+Make edits after the `// END AUTOGEN` comment to ensure CI can enforce the schema remains in sync while retaining your manual changes. See [CI Sync Enforcement](/docs/ci-sync-enforcement#multifile-quick-reference) for more details.
+
 #### Example Output
 
 ```ts title="User.ts" tab="True"

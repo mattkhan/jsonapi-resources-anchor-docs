@@ -1,0 +1,228 @@
+---
+title: CI Sync Enforcement
+---
+
+import { File, Folder, Files } from "fumadocs-ui/components/files";
+import { Callout } from "fumadocs-ui/components/callout";
+
+You may want to use CI to automatically enforce that the schema does not go out of sync.
+
+This guide provides approaches for single file and multifile schemas.
+
+This guide assumes:
+
+- the repo uses the default [`vite_rails`](https://github.com/ElMassimo/vite_ruby/tree/main/vite_rails) file structure, i.e. a monorepo with backend and frontend
+- `yarn` package manager
+
+However, these are not requirements. The intention of this guide is to provide a starting point for CI enforcement and should be adaptable to other repo structures, package managers, shells, etc.
+
+## The Gist
+
+- Add `schema:generate` for local development.
+- Add `schema:check` for CI.
+
+```json title="package.json"
+{
+  "scripts": {
+    "schema:generate": "./bin/jsonapi-schema-generate.sh", // [!code ++]
+    "schema:check": "./bin/jsonapi-schema-check.sh" // [!code ++]
+  }
+}
+```
+
+`yarn schema:check` will fail if the schema being checked in is different from what CI generates.
+
+## Single File Quick Reference
+
+### File Structure
+
+<Files>
+  <Folder name="app" defaultOpen>
+    <Folder name="frontend" defaultOpen>
+      <Folder name="models" defaultOpen>
+        <File name="schema.ts" />
+      </Folder>
+    </Folder>
+  </Folder>
+  <Folder name="bin" defaultOpen>
+    <File name="jsonapi-schema-generate.sh" />
+    <File name="jsonapi-schema-check.sh" />
+  </Folder>
+  <Folder name="lib" defaultOpen>
+    <Folder name="tasks" defaultOpen>
+      <File name="jsonapi.rake" />
+    </Folder>
+  </Folder>
+  <File name="package.json" />
+</Files>
+
+```json title="package.json"
+{
+  "scripts": {
+    "schema:generate": "./bin/jsonapi-schema-generate.sh", // [!code ++]
+    "schema:check": "./bin/jsonapi-schema-check.sh" // [!code ++]
+  }
+}
+```
+
+### `yarn schema:generate`
+
+```sh title="bin/jsonapi-schema-generate.sh"
+set -e
+bundle exec rails jsonapi:generate
+yarn run eslint --fix ./app/frontend/models/schema.ts
+yarn run prettier --write ./app/frontend/models/schema.ts
+```
+
+### `yarn schema:check`
+
+```sh title="bin/jsonapi-schema-check.sh"
+set -e
+bundle exec rails jsonapi:generate
+yarn run eslint --fix ./app/frontend/models/schema.ts
+yarn run prettier --write ./app/frontend/models/schema.ts
+
+if [$(git status ./app/frontend/models/schema.ts --porcelain=1 | wc-l) -ne 0 ]; then
+  git diff
+  echo "Schema is out of sync. Run 'yarn schema:generate'."
+  exit 1
+fi
+```
+
+### `rails jsonapi:generate`
+
+```ruby title="lib/tasks/jsonapi.rake"
+namespace :jsonapi do
+  desc "Generate JSONAPI::Resource Anchor schema"
+  task generate: :environment do
+    puts "Generating JSONAPI::Resource Anchor schema..."
+
+    content = Anchor::TypeScript::SchemaGenerator(
+      register: Schema.register,
+    ).call
+
+    path = Rails.root.join("schema.ts")
+    File.open(path, "w") { |f| f.write(content) }
+    puts "✅ #{File.basename(path)}"
+  end
+end
+```
+
+## Multifile Quick Reference
+
+This guide also works for [`manually_editable`](/docs/API/TypeScript/multifile_schema_generator#manually_editable) multifile schemas.
+
+As long as manual edits are made after the `// END AUTOGEN` comment the strategy below is able to enforce that the _generated_ schema is in sync.
+
+<>{/** // TODO: See Incremental Migration guide for an example use case. */}</>
+
+<Files>
+  <Folder name="app" defaultOpen>
+    <Folder name="frontend" defaultOpen>
+      <Folder name="models" defaultOpen>
+        <Folder name="gen" defaultOpen>
+          <File name="User.model.ts" />
+          <File name="Post.model.ts" />
+          <File name="Comment.model.ts" />
+          <File name="shared.ts" />
+          <File name="hash.json" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+  <Folder name="bin" defaultOpen>
+    <File name="jsonapi-schema-generate.sh" />
+    <File name="jsonapi-schema-check.sh" />
+  </Folder>
+  <Folder name="lib" defaultOpen>
+    <Folder name="tasks" defaultOpen>
+      <File name="jsonapi.rake" />
+    </Folder>
+  </Folder>
+  <File name="package.json" />
+</Files>
+
+```json title="package.json"
+{
+  "scripts": {
+    "schema:generate": "./bin/jsonapi-schema-generate.sh", // [!code ++]
+    "schema:check": "./bin/jsonapi-schema-check.sh" // [!code ++]
+  }
+}
+```
+
+### `yarn schema:generate`
+
+```sh title="bin/jsonapi-schema-generate.sh"
+set -e
+FILES=$(bundle exec rails jsonapi:generate | tr ' ' '\n' | grep 'frontend' | tr '\n' ' ')
+
+if [[ -n "{$FILES//[[:space:]]/}" ]]; then
+  yarn run eslint --fix $FILES
+  yarn run prettier --write $FILES
+fi
+yarn run prettier --write ./app/frontend/models/gen/hash.json
+```
+
+### `yarn schema:check`
+
+```sh title="bin/jsonapi-schema-check.sh"
+set -e
+FILES=$(bundle exec rails jsonapi:generate_no_trust | tr ' ' '\n' | grep 'frontend' | tr '\n' ' ')
+
+if [[ -n "{$FILES//[[:space:]]/}" ]]; then
+  yarn run eslint --fix $FILES
+  yarn run prettier --write $FILES
+fi
+yarn run prettier --write ./app/frontend/models/gen/hash.json
+
+if [$(git status ./app/frontend/models/gen --porcelain=1 | wc-l) -ne 0 ]; then
+  git diff
+  echo "Schema is out of sync. Run 'yarn schema:generate'."
+  exit 1
+fi
+```
+
+### `rails jsonapi:generate`
+
+```ruby title="lib/tasks/jsonapi.rake"
+namespace :jsonapi do
+  desc "Generate JSONAPI::Resource Anchor schema"
+  task generate: :environment do
+    Rails.application.eager_load!
+
+    generator = Anchor::TypeScript::MultifileSchemaGenerator.new(
+      register: Schema.register,
+      context: {},
+      resource_file_extension: '.model.ts'
+    )
+
+    modified_files = Anchor::TypeScript::MultifileSaveService.call(
+      generator:,
+      folder_path: 'app/frontend/models/gen',
+      force: false
+    )
+
+    puts modifed_files.map { |name| Rails.root.join(folder_path, name) }.join(' ')
+  end
+
+  desc "Generate JSONAPI::Resource Anchor schema without trusting hash.json"
+  task generate_no_trust: :environment do
+    Rails.application.eager_load!
+
+    generator = Anchor::TypeScript::MultifileSchemaGenerator.new(
+      register: Schema.register,
+      context: {},
+      resource_file_extension: '.model.ts'
+    )
+
+    modified_files = Anchor::TypeScript::MultifileSaveService.call(
+      generator:,
+      folder_path: 'app/frontend/models/gen',
+      force: false,
+      trust_hash: false
+    )
+    puts modifed_files.map { |name| Rails.root.join(folder_path, name) }.join(' ')
+  end
+end
+```

@@ -66,6 +66,9 @@ export default function HomePage() {
             <li>Type inference</li>
             <li>Type annotations</li>
             <li>Single file and multifile schemas</li>
+            <li>
+              <Link href="/docs/ci-sync-enforcement">CI Sync Enforcement</Link>
+            </li>
             <li className="ml-5">
               Enforce your frontend schema to stay in sync with the backend via
               CI.
