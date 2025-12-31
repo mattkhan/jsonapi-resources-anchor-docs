@@ -77,6 +77,13 @@ export default function HomePage() {
               Support for manually editable schema files that can still be
               validated by CI.
             </li>
+            <li className="ml-10">
+              See the{" "}
+              <Link href="/docs/incremental-migration">
+                Incremental Migration
+              </Link>{" "}
+              guide for an example use case.
+            </li>
             <li>Configurable type inference</li>
             <li>
               Configurable serialization - customize the TypeScript

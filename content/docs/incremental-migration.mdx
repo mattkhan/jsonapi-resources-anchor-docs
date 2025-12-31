@@ -1,0 +1,417 @@
+---
+title: Incremental Migration
+---
+
+import { File, Folder, Files } from "fumadocs-ui/components/files";
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Motivation
+
+In a large codebase, it may not be feasible to immediately fully migrate to the generated schema.
+
+- There may be a considerable amount of type mismatches between the resource's generated type and its manual type, causing TypeScript compilation (`tsc`) errors.
+- Because the generated types reference other generated types in their `relationships`, even attempting to use a single generated type in your app may lead to `tsc` errors unless all of the referenced types in its graph of dependencies are used.
+
+But you may still want to benefit from using the generated schema to stem any further drift and more easily identify any type mismatches that must be resolved to enable a full migration.
+
+## Overview
+
+**The gist**: We'll define the minimal set of TypeScript level overrides to generated types to give them parity with their associated manual type.
+
+This approach enables you to fully migrate your app to the models exported from the generated files, providing the benefits of an automated schema generator without being constrained to its type definitions.
+
+### Preview
+
+Ultimately, the solution will look like:
+
+```ts
+// START AUTOGEN
+
+import type { Comment } from "./Comment.model";
+import type { Post } from "./Post.model";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  nickname: string | null;
+  role: string;
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+  };
+};
+
+// END AUTOGEN
+import { ModelOverride, Omitted } from "./shared.custom"; // [!code ++]
+
+type Override = { // [!code ++]
+  nickname: string; // [!code ++]
+  role: "admin" | "member"; // [!code ++]
+  relationships: { // [!code ++]
+    posts: Omitted; // [!code ++]
+    savedComments: Comment[]; // [!code ++]
+  }; // [!code ++]
+}; // [!code ++]
+type User = Model; // [!code --]
+type User = ModelOverride<Model, Override>; // [!code ++]
+
+export { type User };
+```
+
+Notably, this approach:
+
+1. Can be automated! See [Automating things with ts-morph](#automating-things-with-ts-morph) below.
+2. Defers the frontend code changes required to please `tsc` if you want to eventually use the generated type that differs from your manual type.
+3. Doesn't compromise your backend resource definitions with inaccurate [annotations](/docs/Features/type_annotation) to please `tsc` by matching the current, inaccurate manual type on the frontend.
+4. Doesn't require backend annotations for uninferable attributes.
+5. Keeps the generated schema files [CI enforceable](/docs/ci-sync-enforcement).
+6. Includes the overrides in the same file as the generated type, making it easy to spot what discrepancies are still present in the codebase.
+
+It's an "incremental" migration because we're not fully using the generated type definition.
+
+The end goal should be to have no TypeScript level overrides. The backend should be the single source of truth for the API schema.
+
+## Implementation
+
+1. Use a [`manually_editable`](/docs/API/TypeScript/multifile_schema_generator#manually_editable) multifile schema.
+2. Export an overriden model that overrides disrepancies in the generated type via `ModelOverride<Model, Override>`.
+
+See [Automating things with ts-morph](#automating-things-with-ts-morph) below for an approach to automate step 2.
+
+### Motivation & Demo
+
+After generating a multifile schema, you'll get, for example
+
+```ts
+// START AUTOGEN
+
+import type { Comment } from "./Comment.model";
+import type { Post } from "./Post.model";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  nickname: string | null;
+  role: string;
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+  };
+};
+
+// END AUTOGEN
+
+type User = Model;
+
+export { type User };
+```
+
+But if our current manually typed model looks like:
+
+```ts
+import type { Comment } from "./Comment.model";
+
+export type User = {
+  id: number;
+  type: "users";
+  name: string;
+  nickname: string;
+  role: "admin" | "member";
+  relationships: {
+    comments: Comment[];
+    savedComments: Comment[];
+  };
+};
+```
+
+then using the generated `User` as a drop-in replacement will likely cause `tsc` errors.
+
+- `nickname` is nullable in the generated type, while in the manual type it's not
+- `role` is a union of string literals, not a string
+- `savedComments` is not present in the generated type
+- `posts` relationship is missing in the manual type
+
+Each discrepancy will require a developer to determine how to fix the compilation error.
+
+For example, let's look at `nickname`:
+
+- If `nickname` is genuinely nullable, then the ideal process would be to accept that change and fix any `tsc` errors associated with it.
+- If `nickname` should not be inferred as nullable, then you may want to add a presence validation or a non-null constraint to the database schema to generate the correct type.
+
+When you multiply these issues by N models, using Anchor generated models quickly becomes a non-starter.
+
+Fortunately, with `ModelOverride`, we can defer those decisions by updating the generated file:
+
+```ts
+// START AUTOGEN
+
+import type { Comment } from "./Comment.model";
+import type { Post } from "./Post.model";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  nickname: string | null;
+  role: string;
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+  };
+};
+
+// END AUTOGEN
+import { ModelOverride, Omitted } from "./shared.custom"; // [!code ++]
+
+type Override = { // [!code ++]
+  nickname: string; // [!code ++]
+  role: "admin" | "member"; // [!code ++]
+  relationships: { // [!code ++]
+    posts: Omitted; // [!code ++]
+    savedComments: Comment[]; // [!code ++]
+  }; // [!code ++]
+}; // [!code ++]
+type User = Model; // [!code --]
+type User = ModelOverride<Model, Override>; // [!code ++]
+
+export { type User };
+```
+
+This will effectively make the generated type have parity with the manual type and therefore silence the `tsc` errors.
+
+Our schema remains CI enforceable because all the manual changes to the generated type are written after the `// END AUTOGEN` comment.
+
+### ModelOverride
+
+The definition for `ModelOverride`:
+
+```ts title="shared.custom.ts"
+// https://github.com/piotrwitek/utility-types
+import { Assign, Diff, OmitByValue, PickByValue } from "utility-types";
+
+/** Helper type to show properties and types of an object, one level deep.
+ * See https://stackoverflow.com/a/57683652 */
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+
+const OMITTED: unique symbol = Symbol();
+export type Omitted = typeof OMITTED;
+
+type Model = { relationships: {} };
+
+type Override<G extends object, O extends object> = Assign<
+  Diff<G, PickByValue<O, Omitted>>,
+  OmitByValue<O, Omitted>
+>;
+
+export type ModelOverride<G extends Model, O extends Model> = Expand<
+  Omit<Override<G, O>, "relationships"> & {
+    relationships: Expand<Override<G["relationships"], O["relationships"]>>;
+  }
+>;
+```
+
+#### Description
+
+In words, the process to get the result of `ModelOverride<Generated, Override>`:
+
+- One level deep, for the union of properties (excluding `relationships`) in `Generated` and `Override`:
+  - if the property is shared between both, then the result uses the type definition from `Override`
+    - if the type definition in `Override` is `Omitted`, then the property is not included in the result type
+  - if the property is not shared, then it will be included in the result type using the definition from the source of the property
+- For the `relationships` property: we apply the same logic above to `Generated['relationships']` and `Override['relationships']` and nest it under the `relationships` property in the result type.
+
+In table format:
+
+| `prop` in Generated | `prop` in Override | `ModelOverride<Generated, Override>['prop']` type |
+| ------------------- | ------------------ | ------------------------------------------------- |
+| Yes                 | Yes                | `Override['prop']`                                |
+| Yes                 | Yes, `Omitted`     | excluded                                          |
+| Yes                 | No                 | `Generated['prop']`                               |
+| No                  | Yes                | `Override['prop']`                                |
+
+- Play with it in this [TS playground](https://www.typescriptlang.org/play/?#code/JYWwDg9gTgLgBAbzgUwB5mQYxgFQJ4YDyAZnAL5zFQQhwBEAbsDMgM4x0DcAUNzAcjgBVVsigB9cQHFkAOzEBDFgBM4AXkTc4cYMoBccWQFcQAIzE9t-DAbpHRUVly2GFIZAfZRgsgOaXDYEwAa1k3DzgvH184AB9DIwAbRIDqRIiov1TkRKVgCFlWAAtgMFYDBBdtTBp3WRhyuABhWrkYAG0AXQDtSHZGgAUIdi6Ash5x3mtBETFJQgYxb2VBDUrtWSDQ8M8YbyyXNIi6BWUQHzo4+nczMWdtKBy8guLSxvXtOD6Gg0JzmBUPUoCgY0GYyGULRAdR+zVa9VGLkmkz4AmEDnUcAAshAVokFktdMgADyzCTSOSKFQAGnRc3EBKgy2QAD4eKiMHTyViFMYFIlMR9dAZjLcoAFprZ7GInAEwu5dvt-C5NiF5Rk9tFUhB0rZTudZJd4nQbuYoPc4I9cjB8oUSmUKlU4DVoW1GlCYYjPsDQd4VB63QYAwjukiJuzuGgMNh8ERiKSHCyABQASgAdDAIABRACORn5seQJAT9J5fMSyZTPCjWFwAmLZMkMnkUCUEMradkEBgGezeYL9fjjfEZfzFdTEe4AHoZ7O59Op9jcTlGcy4EUchgoLwZ+uAQ6Z75mEUjKY0y6p2B8nsAO7g4JTow2xLMPAAWmmrG4oEgsEQcAAQVYVhgF8WRaQAEWAYhiFpP5mAAITwAA1fkjGQWkBi2JDUMSdDyEoahaDsZ9Xw-ARZWnAAqKi4AACU3MQ4GmZiIEiIoIBvL5qC3G02DgXlVE-OAIFIXkRNMAArWtaQKQR0kWAUVmQMA024WiAGVkEEIp93KGd2AUEIIEWKBiESTjzxoKcFCnABWAB2AA2AAOABmJy7IAJjgKipw5QQs3QQTiRwFlMRwFBUBYWRlFYHRZGIJjCDgAB+f92gAaQSuBgmQPBRLgQhOl+LLOgIkVkFMngakKeBCCxABJHAcCzCCDCMTY80EVg8DMHVMQ0vrTB1CdI3QaB4BY+CAQhTFpkKhrmtaiCeBYnE8UFS0nhtF57XeChJmm0zmWJKQopiuKJOk7A4IuuQrogKTa3CjQgJAsDiRcKCYLOzDsJQtCSUIOD-hUFkWWpFwZpwoHiRBoqwfbbg2XG38prRDaVxOokzvu2L4qxxI7rQS7CeXCtMSCsAQuh-54ZxlY-qKyH6CtZ47TeOhwoAMk0b12d2zmHTgamQtXXGpHaOhBdtV4yjoTo4Ol2W9q5zoIbGFH2TnXW9f1hcdHASa5pACmvwCuFXXqLaXGFBIxQlAQDAAchdGFWBdiVScVLVDh2uX9sdb1MEeJRoAMMkxnDKY0SGdhbe0e3RTNJ2bDgF3vk973ot9g4HgDtWRY+aow8zKBI4caPuHGIA) that tests the overriden `User` is equivalent to the manual one.
+  - More granular tests in [mattkhan/anchor-migrate/\*/shared.custom.test.ts](https://github.com/mattkhan/anchor-migrate/blob/f4a60cb271976133bd5ffaf3d7c903a11e392602/src/fixtures/converted/shared.custom.test.ts).
+
+Credit to [@mjewell](https://github.com/mjewell) for the `Omitted` approach.
+
+## Automating things with ts-morph
+
+### Overview
+
+In this section we'll go over a recipe that uses [`dsherret/ts-morph`](https://github.com/dsherret/ts-morph) to automate the approach above, namely:
+
+1. Generating an `Override` type that only includes the necessary overrides.
+2. Inserting that `Override` type into the generated file.
+3. Updating the exported type in the generated file from e.g. `type User = Model` to `type User = ModelOverride<Model, Override>`.
+4. Inserting the imports for `ModelOverride` and `Omitted`, as necessary.
+
+All of those modifications will be placed under the `// END AUTOGEN` comment to ensure the schema remains enforceable by CI.
+
+- The recipe is defined in [mattkhan/anchor-migrate](https://github.com/mattkhan/anchor-migrate) and runnable, see the [tests](https://github.com/mattkhan/anchor-migrate/blob/6a55873d0d4c63b210e972f6db61379fcf1e7ed1/src/migrate.test.ts?plain=1#L1).
+  - There are assumptions on how the project is structured and how the manual types are defined, but the concepts and code should be adaptable to other configurations.
+  - See the [Example](#example) below for a quick overview of the prerequisite assumptions and the expected results of the script.
+
+### Description
+
+The full script looks something like:
+
+```ts
+import path from "path";
+
+import { migrate } from "./migrate";
+import { postMigration } from "./post-migration";
+
+const dir = path.join(__dirname, "models");
+
+function migrateModel(model: string) {
+  const genFilePath = path.join(dir, `gen/${model}.model.ts`);
+  const manualFilePath = path.join(dir, `manual/${model}.model.ts`);
+
+  const sourceFile = migrate(genFilePath, manualFilePath);
+  postMigration.convertRelationships(sourceFile!)!.getFullText();
+}
+
+["User", "Comment", "Post"].forEach(migrateModel);
+```
+
+`migrate` ([source](https://github.com/mattkhan/anchor-migrate/blob/6a55873d0d4c63b210e972f6db61379fcf1e7ed1/src/migrate.ts?plain=1#L14))
+
+- Generates an `Override` type that:
+  - omits properties in the generated type and not in the manual by setting the property's type to `Omitted`
+  - copies properties from the manual type that are not in the generated type
+  - copies over the manual type's `relationships` property (without modifying it)
+  - does not include shared properties with equivalent types
+- Inserts that typedef, `type Override = { ... }`, into the generated file,
+- Updates `type User = Model` to `type Model = ModelOverride<Model, Override>`.
+- Imports `ModelOverride` and, if necessary, `Omitted`.
+
+`postMigration.convertRelationships` ([source](https://github.com/mattkhan/anchor-migrate/blob/6a55873d0d4c63b210e972f6db61379fcf1e7ed1/src/post-migration.ts?plain=1#L63))
+
+<Callout>
+  This is intended to be run once, directly after the initial migration above.
+  See the
+  [jsdoc](https://github.com/mattkhan/anchor-migrate/blob/6a55873d0d4c63b210e972f6db61379fcf1e7ed1/src/post-migration.ts?plain=1#L17)
+  for more detail.
+</Callout>
+
+- Removes the equal relationship properties and adds the relevant omissions to `Override['relationships']`. Imports `Omitted` if necessary.
+- We intentionally execute this _after_ adding `Override` to the generated file in order for the generated and `Override` types to share the same type for imported relationships.
+  - Assuming that the manual type definition used the same name (e.g. `Comment`) for an imported/referenced relationship type, our script can accurately determine equal relationships and remove them.
+
+### What this recipe doesn't do
+
+It does not automatically carry over any imports or type definitions from the manual type definition into the generated file.
+
+If you end up manually doing that, it may be useful to save those specific changes as a patch.
+
+For example, if this migration is in a long running git branch:
+
+- have one commit for the automated changes
+- have a separate commit for the manual changes
+
+If any changes are made to the backend schema while the branch is being reviewed, you can re-execute the automated schema generation and the migration described in this guide from the latest `main` branch commit and then cherry pick the commit with the manual changes on top.
+
+### Example
+
+<Files>
+  <Folder name="app" defaultOpen>
+    <Folder name="frontend" defaultOpen>
+      <Folder name="models" defaultOpen>
+        <Folder name="gen" defaultOpen>
+          <File name="Comment.model.ts" />
+          <File name="Post.model.ts" />
+          <File name="User.model.ts" />
+          <File name="shared.custom.ts" />
+        </Folder>
+        <Folder name="manual" defaultOpen>
+          <File name="Comment.model.ts" />
+          <File name="Post.model.ts" />
+          <File name="User.model.ts" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+  <File name="package.json" />
+</Files>
+
+```ts title="app/frontend/models/manual/User.model.ts"
+import Comment from "./Comment.model";
+import Post from "./Post.model";
+
+type User = {
+  id: string;
+  type: string;
+  name: string;
+  role: "admin" | "member" | "none";
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+    thing: { thing: "whatever" }[];
+  };
+};
+
+export default User;
+```
+
+```ts title="app/frontend/models/gen/User.model.ts"
+// START AUTOGEN
+
+import type { Comment } from "./Comment.model";
+import type { Post } from "./Post.model";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  role: "admin" | "member";
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+    savedComments: Comment[];
+  };
+};
+
+// END AUTOGEN
+
+type User = Model;
+
+export { type User };
+```
+
+After migrating `User`, we'll end up with:
+
+```ts title="app/frontend/models/gen/User.model.ts"
+// START AUTOGEN
+
+import type { Comment } from "./Comment.model";
+import type { Post } from "./Post.model";
+
+type Model = {
+  id: number;
+  type: "users";
+  name: string;
+  role: "admin" | "member";
+  relationships: {
+    comments: Comment[];
+    posts: Post[];
+  };
+};
+
+// END AUTOGEN
+import { ModelOverride, Omitted } from "./shared.custom";
+
+type Override = {
+  id: string;
+  type: string;
+  role: "admin" | "member" | "none";
+  relationships: {
+    thing: { thing: "whatever" }[];
+    savedComments: Omitted;
+  };
+};
+type User = ModelOverride<Model, Override>;
+
+export { type User };
+```
