@@ -122,6 +122,45 @@ const useOutputEditor = (enabled: boolean) => {
   return editor;
 };
 
+const Playground = ({ children }: React.PropsWithChildren) => {
+  return (
+    <div className="flex flex-col w-full">
+      <div className="prose flex flex-col">
+        <h3 id="playground">
+          Playground{" "}
+          <span className="text-sm text-fd-muted-foreground font-normal">
+            WIP
+          </span>
+        </h3>
+
+        <div className="text-fd-muted-foreground mb-3 text-sm">
+          Built with{" "}
+          <a
+            href="https://github.com/ruby/ruby.wasm"
+            rel="noreferrer"
+            target="_blank"
+          >
+            ruby/ruby.wasm
+          </a>{" "}
+          and{" "}
+          <a href="https://codemirror.net/" rel="noreferrer" target="_blank">
+            CodeMirror
+          </a>
+          .
+        </div>
+
+        <div className="text-fd-muted-foreground">
+          Generate TypeScript from <code>Anchor::Types</code> types.
+        </div>
+        <div className="text-fd-muted-foreground mb-4">
+          Must return a string.
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
 export const Editor = () => {
   const { evaluate, initiate, initiateStatus } = useRubyVM();
   const outputEditor = useOutputEditor(initiateStatus === "success");
@@ -163,45 +202,6 @@ export const Editor = () => {
   const onImperativeChange = () => {
     const editorText = editor.current?.state.doc.toString() ?? "";
     onDocChange(editorText);
-  };
-
-  const Playground = ({ children }: React.PropsWithChildren) => {
-    return (
-      <div className="flex flex-col w-full">
-        <div className="prose flex flex-col">
-          <h3 id="playground">
-            Playground{" "}
-            <span className="text-sm text-fd-muted-foreground font-normal">
-              WIP
-            </span>
-          </h3>
-
-          <div className="text-fd-muted-foreground mb-3 text-sm">
-            Built with{" "}
-            <a
-              href="https://github.com/ruby/ruby.wasm"
-              rel="noreferrer"
-              target="_blank"
-            >
-              ruby/ruby.wasm
-            </a>{" "}
-            and{" "}
-            <a href="https://codemirror.net/" rel="noreferrer" target="_blank">
-              CodeMirror
-            </a>
-            .
-          </div>
-
-          <div className="text-fd-muted-foreground">
-            Generate TypeScript from <code>Anchor::Types</code> types.
-          </div>
-          <div className="text-fd-muted-foreground mb-4">
-            Must return a string.
-          </div>
-          {children}
-        </div>
-      </div>
-    );
   };
 
   if (initiateStatus === "pending") {

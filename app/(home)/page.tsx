@@ -10,17 +10,18 @@ import { CodeBlock } from "../components/code-block";
 import { Card } from "fumadocs-ui/components/card";
 import { Editor } from "../components/editor";
 
+const Title = () => (
+  <>
+    Playground{" "}
+    <span className="text-xs text-fd-muted-foreground font-normal">WIP</span>
+  </>
+);
+
 export default function HomePage() {
-  const Title = () => (
-    <>
-      Playground{" "}
-      <span className="text-xs text-fd-muted-foreground font-normal">WIP</span>
-    </>
-  );
   return (
     <div className="flex w-full justify-center">
       <main className="container relative max-w-[1100px] px-2 py-4 z-2 lg:py-8">
-        <div className="prose w-[100%] relative">
+        <div className="prose w-full relative">
           <h1 className="max-w-fit mx-auto text-center">
             JSONAPI Resources Anchor
           </h1>
@@ -29,8 +30,8 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="mt-10 flex flex-row content-stretch rounded-sm max-md:flex-col bg-[var(--shiki-light-bg)] dark:bg-[var(--shiki-dark-bg)]">
-          <div className="flex flex-col gap-4 max-w-[50%] max-md:max-w-[100%] shrink grow-0">
+        <div className="mt-10 flex flex-row content-stretch rounded-sm max-md:flex-col bg-(--shiki-light-bg) dark:bg-(--shiki-dark-bg)">
+          <div className="flex flex-col gap-4 max-w-[50%] max-md:max-w-full shrink grow-0">
             <CodeBlock
               key={1}
               id="left-code-block"
