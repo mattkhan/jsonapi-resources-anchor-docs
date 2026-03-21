@@ -16,13 +16,13 @@ export async function CodeBlock({
   const rendered = await highlight(code, {
     lang,
     components: {
-      pre: (props) => (
+      pre: ({ className, ref: _ref, ...props }) => (
         <Base.Pre
           {...props}
           className={twMerge(
-            props.className,
+            className,
             /** not in there for some reason ? */
-            "bg-(--shiki-light-bg) dark:bg-(--shiki-dark-bg)",
+            "bg-(--shiki-light-bg)! dark:bg-(--shiki-dark-bg)! **:text-(--shiki-light)! **:dark:text-(--shiki-dark)!",
           )}
         />
       ),
