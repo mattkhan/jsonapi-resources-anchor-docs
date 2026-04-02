@@ -16,10 +16,12 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/language": "^6.11.3",
     "@codemirror/legacy-modes": "^6.5.2",
+    "@radix-ui/react-popover": "^1.1.15",
     "@replit/codemirror-vim": "^6.3.0",
     "@ruby/3.4-wasm-wasi": "^2.8.1",
     "@ruby/wasm-wasi": "^2.8.1",
     "@uiw/codemirror-theme-tokyo-night": "^4.25.8",
+    "class-variance-authority": "^0.7.1",
     "codemirror": "^6.0.2",
     "fumadocs-core": "16.7.4",
     "fumadocs-mdx": "14.2.11",
@@ -28,7 +30,8 @@
     "lz-string": "^1.5.0",
     "next": "16.2.1",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@matt/eslint-config-me": "https://github.com/mattkhan/eslint-config-me",
