@@ -9,6 +9,7 @@ import {
 import { notFound } from "next/navigation";
 import { getMDXComponents } from "@/mdx-components";
 import { createRelativeLink } from "fumadocs-ui/mdx";
+import { MarkdownCopyButton } from "@/components/ai/page-actions";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -25,7 +26,12 @@ export default async function Page(props: {
       tableOfContent={{ style: "clerk" }}
       full={page.data.full}
     >
-      <DocsTitle>{page.data.title}</DocsTitle>
+      <div className="flex flex-row gap-2 justify-between">
+        <DocsTitle>{page.data.title}</DocsTitle>
+        <div>
+          <MarkdownCopyButton markdownUrl={`${page.url}.mdx`} />
+        </div>
+      </div>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDX
