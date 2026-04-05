@@ -25,9 +25,8 @@ import { CheckCircleIcon, InfoIcon } from "lucide-react";
 
 function setCodeQueryParam(code: string) {
   const currentUrl = new URL(window.location.href);
-  const newParams = new URLSearchParams(currentUrl.search);
-  newParams.set("code", compressToEncodedURIComponent(code));
-  const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}?${newParams.toString()}`;
+  const safeCode = compressToEncodedURIComponent(code);
+  const newUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}#${safeCode}`;
   window.history.pushState({ path: newUrl }, "", newUrl);
   return newUrl;
 }
@@ -130,9 +129,8 @@ export function Editor() {
   } | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code") || "";
-    const value = decompressFromEncodedURIComponent(code);
+    const code = window.location.hash;
+    const value = decompressFromEncodedURIComponent(code.slice(1));
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInitCode({ value: value || init, trusted: !value });
