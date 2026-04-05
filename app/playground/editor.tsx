@@ -134,8 +134,9 @@ export function Editor() {
     const code = params.get("code") || "";
     const value = decompressFromEncodedURIComponent(code);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInitCode({ value: value || init, trusted: !value });
-  }, [setInitCode]);
+  }, []);
 
   if (!initCode) return null;
 

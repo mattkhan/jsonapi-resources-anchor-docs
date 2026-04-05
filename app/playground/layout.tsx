@@ -4,7 +4,6 @@ import { baseOptions } from "@/app/layout.config";
 import { source } from "@/lib/source";
 import { Metadata } from "next";
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const metadata: Metadata = {
   title: "Playground | JSONAPI Resources Anchor",
   description: "Generate TypeScript types from your JSONAPI Resources.",

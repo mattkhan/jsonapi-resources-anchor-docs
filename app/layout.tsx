@@ -9,7 +9,6 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const metadata: Metadata = {
   title: "JSONAPI Resources Anchor",
   description: "Generate TypeScript types from your JSONAPI Resources.",
